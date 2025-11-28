@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Single User table for ALL roles
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String?
+  password      String
+  name          String
+  role          UserRole
+  
+  // Role-specific fields (nullable)
+  location      String?   // For Admin
+  clinicName    String?   // For Admin
+  subsValidity  DateTime? // For Admin
+  specialization String?  // For Doctor
+  departmentId  String?   // For Staff/Receptionist
+  
+  // Auth & Security
+  isActive      Boolean   @default(true)
+  isVerified    Boolean   @default(false)
+  resetToken    String?
+  resetTokenExp DateTime?
+  otpCode       String?
+  otpExpiry     DateTime?
+  lastLogin     DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN    // Company level
+  ADMIN          // Clinic owner
+  DOCTOR
+  RECEPTIONIST
+  STAFF
+  PATIENT
+}
