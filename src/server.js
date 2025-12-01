@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express = require('express')
 const authRoutes = require('./routes/authRoutes')
+const adminRoutes = require('./routes/adminRoutes')
 const errorHandler = require('./middlewares/errorHandler')
 
 const app = express()
@@ -11,6 +12,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/admin', adminRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

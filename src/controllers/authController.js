@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs')
 const prisma = require('../config/db')
 const { generateToken } = require('../utils/tokenUtils')
-const { sendCredentialsEmail, sendOTPEmail } = require('../services/emailServices')
-const { generateOTP, generatePassword } = require('../utils/otpServices')
+const { sendOTPEmail } = require('../services/emailServices')
+const { generateOTP } = require('../utils/otpServices')
 
 
 // =============================================
@@ -55,91 +55,6 @@ exports.superAdminLogin = async (req, res, next) => {
           name: superAdmin.name
         },
         token
-      }
-    })
-  } catch (error) {
-    next(error)
-  }
-}
-
-// =============================================
-// CREATE ADMIN (Super Admin creates clinic owner)
-// =============================================
-exports.createAdmin = async (req, res, next) => {
-  try {
-    const { email, adminName, phone, clinicName, location, subsValidity } = req.body
-
-    // Validate input
-    if (!email || !adminName || !phone || !clinicName || !location || !subsValidity) {
-      return res.status(400).json({
-        success: false,
-        error: 'All fields are required: email, adminName, phone, clinicName, location, subsValidity'
-      })
-    }
-
-    // Check if request is from super admin
-    if (req.user.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Only Super Admin can create clinic owners' 
-      })
-    }
-
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } })
-    if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email already registered' 
-      })
-    }
-
-    // Generate random password
-    const generatedPassword = generatePassword() // e.g., "Abc123!@#"
-    const hashedPassword = await bcrypt.hash(generatedPassword, 12)
-
-    // Create admin
-    const admin = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: adminName,
-        phone: phone,
-        role: 'ADMIN',
-        clinicName,
-        location,
-        subsValidity: new Date(subsValidity),
-        isActive: true,
-        isVerified: false
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        name: true,
-        role: true,
-        clinicName: true,
-        location: true,
-        subsValidity: true,
-        createdAt: true
-      }
-    })
-
-    // Send credentials via email
-    await sendCredentialsEmail(email, {
-      name: adminName,
-      email: email,
-      password: generatedPassword,
-      clinicName: clinicName,
-      loginUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/login`
-    })
-
-    res.status(201).json({
-      success: true,
-      message: 'Admin created successfully. Credentials sent to email.',
-      data: {
-        admin,
-        temporaryPassword: generatedPassword // Include in response for testing
       }
     })
   } catch (error) {
@@ -383,37 +298,6 @@ exports.resetPassword = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Password reset successful. Please login with new password.'
-    })
-  } catch (error) {
-    next(error)
-  }
-}
-
-// =============================================
-// GET CURRENT USER (Protected route)
-// =============================================
-exports.getMe = async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        name: true,
-        role: true,
-        clinicName: true,
-        location: true,
-        subsValidity: true,
-        isActive: true,
-        lastLogin: true,
-        createdAt: true
-      }
-    })
-
-    res.json({
-      success: true,
-      data: user
     })
   } catch (error) {
     next(error)
