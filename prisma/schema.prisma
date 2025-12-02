@@ -46,3 +46,32 @@ enum UserRole {
   STAFF
   PATIENT
 }
+
+model Doctor {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id])
+
+  qualification    String
+  registrationNo   String
+  experience       String?
+  salary           Int
+  shift            Shift
+  gender           String
+  department       String
+  aadhaar          String
+  address          String
+
+  consultationFee  Int?
+  availabilityDays String?   // Could be JSON for future expansion
+  documentUrl      String?   // File upload
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+enum Shift {
+  MORNING
+  EVENING
+  ROTATIONAL
+}
