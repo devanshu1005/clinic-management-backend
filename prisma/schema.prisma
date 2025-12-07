@@ -9,20 +9,20 @@ datasource db {
 
 // Single User table for ALL roles
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  phone         String?
-  password      String
-  name          String
-  role          UserRole
-  
+  id       String   @id @default(uuid())
+  email    String   @unique
+  phone    String?
+  password String
+  name     String
+  role     UserRole
+
   // Role-specific fields (nullable)
-  location      String?   // For Admin
-  clinicName    String?   // For Admin
-  subsValidity  DateTime? // For Admin
-  specialization String?  // For Doctor
-  departmentId  String?   // For Staff/Receptionist
-  
+  location       String? // For Admin
+  clinicName     String? // For Admin
+  subsValidity   DateTime? // For Admin
+  specialization String? // For Doctor
+  departmentId   String? // For Staff/Receptionist
+
   // Auth & Security
   isActive      Boolean   @default(true)
   isVerified    Boolean   @default(false)
@@ -31,16 +31,17 @@ model User {
   otpCode       String?
   otpExpiry     DateTime?
   lastLogin     DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Doctor    Doctor?
 
   @@map("users")
 }
 
 enum UserRole {
-  SUPER_ADMIN    // Company level
-  ADMIN          // Clinic owner
+  SUPER_ADMIN // Company level
+  ADMIN // Clinic owner
   DOCTOR
   RECEPTIONIST
   STAFF
@@ -48,26 +49,26 @@ enum UserRole {
 }
 
 model Doctor {
-  id               String    @id @default(uuid())
-  userId           String    @unique
-  user             User      @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 
-  qualification    String
-  registrationNo   String
-  experience       String?
-  salary           Int
-  shift            Shift
-  gender           String
-  department       String
-  aadhaar          String
-  address          String
+  qualification  String
+  registrationNo String
+  experience     String?
+  salary         Int
+  shift          Shift
+  gender         String
+  department     String
+  aadhaar        String
+  address        String
 
   consultationFee  Int?
-  availabilityDays String?   // Could be JSON for future expansion
-  documentUrl      String?   // File upload
+  availabilityDays String? // Could be JSON for future expansion
+  documentUrl      String? // File upload
 
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Shift {
