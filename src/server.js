@@ -10,7 +10,7 @@ const app = express()
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000'] // Default for development
+  : ['http://localhost:3000'] // Default for development. 
 
 const corsOptions = {
   origin: function (origin, callback) {
