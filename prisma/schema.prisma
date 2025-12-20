@@ -14,14 +14,7 @@ model User {
   phone    String?
   password String
   name     String
-  role     UserRole
-
-  // Role-specific fields (nullable)
-  location       String? // For Admin
-  clinicName     String? // For Admin
-  subsValidity   DateTime? // For Admin
-  specialization String? // For Doctor
-  departmentId   String? // For Staff/Receptionist
+  role     UserRole @default(PATIENT)
 
   // Auth & Security
   isActive      Boolean   @default(true)
@@ -34,9 +27,45 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  Doctor    Doctor?
 
+  Admin  Admin?
+  Doctor Doctor?
+
+  @@index([email])
+  @@index([phone])
   @@map("users")
+}
+
+model Admin {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Clinic Information
+  clinicName   String
+  location     String
+  subsValidity DateTime // Subscription expiry
+
+  // Optional clinic details
+  clinicLogo  String?
+  clinicPhone String?
+  clinicEmail String?
+  address     String?
+
+  // Business details
+  gstin     String? @unique // GST number
+  panNumber String? @unique
+  licenseNo String? // Medical establishment license
+
+  // Settings
+  workingHours String? // JSON: { "monday": "9AM-5PM", ... }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicName])
+  @@index([subsValidity])
+  @@map("admins")
 }
 
 enum UserRole {
@@ -51,24 +80,36 @@ enum UserRole {
 model Doctor {
   id     String @id @default(uuid())
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   qualification  String
-  registrationNo String
+  registrationNo String      @unique
   experience     String?
   salary         Int
   shift          Shift
-  gender         String
+  gender         GenderRoles
   department     String
-  aadhaar        String
+  aadhaar        String      @unique
   address        String
 
   consultationFee  Int?
   availabilityDays String? // Could be JSON for future expansion
-  documentUrl      String? // File upload
+  documentUrl      String[] // File upload
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([department])
+  @@index([gender])
+  @@index([shift])
+  @@index([createdAt])
+  @@map("doctors")
+}
+
+enum GenderRoles {
+  MALE
+  FEMALE
+  OTHERS
 }
 
 enum Shift {

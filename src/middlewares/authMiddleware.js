@@ -45,9 +45,14 @@ const protect = async (req, res, next) => {
         name: true, 
         role: true, 
         isActive: true,
-        clinicName: true,
-        location: true,
-        subsValidity: true
+        Admin: {
+          select: {
+            id: true,
+            clinicName: true,
+            location: true,
+            subsValidity: true
+          }
+        }
       }
     })
 
@@ -66,11 +71,18 @@ const protect = async (req, res, next) => {
     }
 
     // Check subscription validity for ADMIN role
-    if (user.role === 'ADMIN' && user.subsValidity) {
-      if (new Date() > user.subsValidity) {
-        return res.status(403).json({ 
-          success: false, 
-          error: 'Subscription expired. Please renew to continue.' 
+    if (user.role === 'ADMIN') {
+      if (!user.Admin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Admin profile not found'
+        })
+      }
+
+      if (user.Admin.subsValidity && new Date() > user.Admin.subsValidity) {
+        return res.status(403).json({
+          success: false,
+          error: 'Subscription expired. Please renew to continue.'
         })
       }
     }

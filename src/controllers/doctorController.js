@@ -6,7 +6,7 @@ const { generatePassword } = require("../utils/otpServices");
 // =====================================================================
 // CREATE DOCTOR (ADMIN only)
 // =====================================================================
-exports.createDoctor = async (req, res, next) => {
+exports. createDoctor = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({

@@ -4,6 +4,7 @@ const cors = require('cors')
 const authRoutes = require('./routes/authRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const doctorRoutes = require('./routes/doctorRoutes')
+const dashboardRoutes = require('./routes/dashboardRoutes')
 const errorHandler = require('./middlewares/errorHandler')
 
 const app = express()
@@ -59,6 +60,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/doctor', doctorRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
