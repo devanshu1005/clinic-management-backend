@@ -5,6 +5,7 @@ const authRoutes = require('./routes/authRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const doctorRoutes = require('./routes/doctorRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes')
+const receptionistRoutes = require('./routes/receptionistRoutes')
 const errorHandler = require('./middlewares/errorHandler')
 
 const app = express()
@@ -61,6 +62,9 @@ app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/doctor', doctorRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/receptionist', receptionistRoutes)
+
+
 
 // Health check
 app.get('/health', (req, res) => {
