@@ -23,3 +23,4 @@ exports.generatePassword = () => {
   // Shuffle the password
   return password.split('').sort(() => Math.random() - 0.5).join('')
 }
+//changes by raunak for test
