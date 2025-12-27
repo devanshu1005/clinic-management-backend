@@ -30,8 +30,6 @@ model User {
 
   Admin  Admin?
   Doctor Doctor?
-  Receptionist Receptionist?
-
 
   @@index([email])
   @@index([phone])
@@ -173,6 +171,71 @@ model Staff {
   @@index([department])
   @@map("staff")
 }
+enum StaffCategory {
+  NURSE
+  LAB_TECH
+  PHARMACY
+  ATTENDANT
+  CLEANING
+  OTHER
+}
+
+model Receptionist {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Receptionist Details
+  experience   String?
+  salary       Int
+  shift        Shift
+  gender       GenderRoles
+  aadhaar      String   @unique
+  address      String
+
+  // Optional fields
+  deskNumber   String?
+  shiftTiming  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shift])
+  @@index([gender])
+  @@map("receptionists")
+}
+
+model Staff {
+  id        String @id @default(uuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Staff-specific details
+  skill        String
+  category     StaffCategory
+  experience   String?
+  salary       Int
+  shift        Shift
+  gender       GenderRoles
+  aadhaar      String @unique
+  address      String
+
+  // Optional fields
+  registrationNo String?
+  department     String?
+  staffCode      String?
+  joiningDate    DateTime?
+  roleBadge      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([shift])
+  @@index([department])
+  @@map("staffs")
+}
+
 enum StaffCategory {
   NURSE
   LAB_TECH
