@@ -6,6 +6,7 @@ const adminRoutes = require('./routes/adminRoutes')
 const doctorRoutes = require('./routes/doctorRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes')
 const receptionistRoutes = require('./routes/receptionistRoutes')
+const staffRoutes = require('./routes/staffRoutes');
 const errorHandler = require('./middlewares/errorHandler')
 
 const app = express()
@@ -88,6 +89,8 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/doctor', doctorRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/receptionist', receptionistRoutes)
+app.use('/api/staff', staffRoutes);
+
 
 
 
