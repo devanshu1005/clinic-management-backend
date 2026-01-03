@@ -10,7 +10,7 @@ const {
 } = require("../controllers/receptionistController");
 
 // ADMIN creates receptionist
-router.post("/create-receptionist", protect, createReceptionist);
+router.post("/create-receptionist", protect,createReceptionist);
 
 // Get receptionist profile
 router.get("/:receptionistId", protect, getReceptionistProfile);

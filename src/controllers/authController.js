@@ -97,7 +97,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Check subscription validity for ADMIN role
-    if (user.role === 'ADMIN' && user.subsValidity) {
+   if (user.role === 'ADMIN' && user.subsValidity) {
       if (new Date() > user.subsValidity) {
         return res.status(403).json({ 
           success: false, 
@@ -107,13 +107,14 @@ exports.login = async (req, res, next) => {
     }
 
     // Update last login
-    await prisma.user.update({
+   await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() }
     })
 
     // Generate JWT token
     const token = generateToken(user.id)
+  
 
     res.json({
       success: true,
