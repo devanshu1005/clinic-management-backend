@@ -5,12 +5,18 @@ const { protect } = require("../middlewares/authMiddleware");
 const {
   createReceptionist,
   getReceptionistProfile,
+  getAllReceptionists,
   updateReceptionist,
+  disableReceptionist,
   adminUpdateReceptionistPassword
 } = require("../controllers/receptionistController");
 
 // ADMIN creates receptionist
 router.post("/create-receptionist", protect,createReceptionist);
+
+
+// Get all receptionists (ADMIN)
+router.get("/", protect, getAllReceptionists);
 
 // Get receptionist profile
 router.get("/:receptionistId", protect, getReceptionistProfile);
@@ -24,5 +30,8 @@ router.put(
   protect,
   adminUpdateReceptionistPassword
 );
+
+// Disable receptionist (ADMIN)
+router.put("/:receptionistId/disable", protect, disableReceptionist);
 
 module.exports = router;

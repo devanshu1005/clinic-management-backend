@@ -37,6 +37,17 @@ exports.createReceptionist = async (req, res, next) => {
         error: "Email already registered",
       });
     }
+    // Check Aadhaar exists
+const aadhaarExists = await prisma.receptionist.findUnique({
+  where: { aadhaar }
+});
+
+if (aadhaarExists) {
+  return res.status(400).json({
+    success: false,
+    error: "Aadhaar already registered"
+  });
+}
 
     // Generate password
     const rawPassword = generatePassword();
@@ -260,6 +271,78 @@ exports.adminUpdateReceptionistPassword = async (req, res, next) => {
     res.json({
       success: true,
       message: "Password updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// =====================================================================
+// GET ALL RECEPTIONISTS (ADMIN only)
+// =====================================================================
+exports.getAllReceptionists = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can view all receptionists",
+      });
+    }
+
+    const receptionists = await prisma.receptionist.findMany({
+      where: {
+        user: {
+          isActive: true, // only active receptionists
+        },
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json({
+      success: true,
+      data: receptionists,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// =====================================================================
+// DISABLE RECEPTIONIST (ADMIN only)
+// =====================================================================
+exports.disableReceptionist = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can disable a receptionist",
+      });
+    }
+
+    const { receptionistId } = req.params;
+
+    const receptionist = await prisma.receptionist.findUnique({
+      where: { id: receptionistId },
+    });
+
+    if (!receptionist) {
+      return res.status(404).json({
+        success: false,
+        error: "Receptionist not found",
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: receptionist.userId },
+      data: { isActive: false },
+    });
+
+    res.json({
+      success: true,
+      message: "Receptionist disabled successfully",
     });
   } catch (error) {
     next(error);
