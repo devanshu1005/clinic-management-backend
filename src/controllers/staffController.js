@@ -98,8 +98,11 @@ exports.createStaff = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: "Staff created successfully",
-      data: staff,
-    });
+      data: {
+        ...staff,
+        password: rawPassword // dev/testing only
+      }
+    });    
   } catch (error) {
     next(error);
   }
