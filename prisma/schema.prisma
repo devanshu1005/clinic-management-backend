@@ -28,10 +28,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Admin  Admin?
-  Doctor Doctor?
+  Admin        Admin?
+  Doctor       Doctor?
   Receptionist Receptionist?
-  Staff Staff?
+  Staff        Staff?
 
   @@index([email])
   @@index([phone])
@@ -126,16 +126,16 @@ model Receptionist {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Receptionist Details
-  experience   String?
-  salary       Int
-  shift        Shift
-  gender       GenderRoles
-  aadhaar      String   @unique
-  address      String
+  experience String?
+  salary     Int
+  shift      Shift
+  gender     GenderRoles
+  aadhaar    String      @unique
+  address    String
 
   // Optional fields
-  deskNumber   String?
-  shiftTiming  String?
+  deskNumber  String?
+  shiftTiming String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -146,19 +146,19 @@ model Receptionist {
 }
 
 model Staff {
-  id        String @id @default(uuid())
-  userId    String @unique
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Staff-specific details
-  skill        String
-  category     StaffCategory
-  experience   String?
-  salary       Int
-  shift        Shift
-  gender       GenderRoles
-  aadhaar      String @unique
-  address      String
+  skill      String
+  category   StaffCategory
+  experience String?
+  salary     Int
+  shift      Shift
+  gender     GenderRoles
+  aadhaar    String        @unique
+  address    String
 
   // Optional fields
   registrationNo String?

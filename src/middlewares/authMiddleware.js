@@ -71,6 +71,7 @@ const protect = async (req, res, next) => {
     }
 
     // Check subscription validity for ADMIN role
+   
     if (user.role === 'ADMIN') {
       if (!user.Admin) {
         return res.status(403).json({
@@ -78,8 +79,16 @@ const protect = async (req, res, next) => {
           error: 'Admin profile not found'
         })
       }
+      console.log('NOW:', new Date())
+      console.log('SUBS:', user.Admin.subsValidity)
+      
+      if (
+        user.Admin.subsValidity &&
+        Date.now() > new Date(user.Admin.subsValidity).getTime()
+      ) {
+      
 
-      if (user.Admin.subsValidity && new Date() > user.Admin.subsValidity) {
+     // if (user.Admin.subsValidity && new Date() > user.Admin.subsValidity) {
         return res.status(403).json({
           success: false,
           error: 'Subscription expired. Please renew to continue.'
