@@ -15,7 +15,7 @@ router.get('/me', protect, getMe)
 
 // Super Admin only
 router.post('/create-admin', protect, authorize('SUPER_ADMIN'), createAdmin)
-router.get('/all-admins', protect, authorize('SUPER_ADMIN'), getAllAdmins)
+router.get('/all-admins', protect, getAllAdmins)
 
 router.put('/update/:adminId', protect, authorize('SUPER_ADMIN'), updateAdminInfo)
 router.put('/password/:adminId', protect, authorize('SUPER_ADMIN'), updateAdminPassword)
