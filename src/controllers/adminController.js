@@ -175,63 +175,65 @@ exports.getMe = async (req, res, next) => {
 // =============================================
 exports.getAllAdmins = async (req, res, next) => {
   try {
-    // Only super admin can access this API
-    if (req.user.role !== 'SUPER_ADMIN') {
+    if (req.user.role !== "SUPER_ADMIN") {
       return res.status(403).json({
         success: false,
-        error: 'Only Super Admin can view all admins'
-      })
+        error: "Only Super Admin can view admins"
+      });
     }
 
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN' },
+    const admins = await prisma.admin.findMany({
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
-        isActive: true,
+        clinicName: true,
+        location: true,
+        subsValidity: true,
         createdAt: true,
-        Admin: {
+
+        // join user
+        user: {
           select: {
             id: true,
-            clinicName: true,
-            location: true,
-            subsValidity: true
+            name: true,
+            email: true,
+            phone: true,
+            isActive: true,
+            role: true
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
-    })
+      orderBy: { createdAt: "desc" }
+    });
 
-    // Transform to simple frontend-friendly JSON
-    const formatted = admins.map(a => ({
-      id: a.id,
-      name: a.name,
-      email: a.email,
-      phone: a.phone,
-      isActive: a.isActive,
+    // Format clean JSON
+    const data = admins.map(a => ({
+      id: a.user.id,
+      name: a.user.name,
+      email: a.user.email,
+      phone: a.user.phone,
+      role: a.user.role,
+      isActive: a.user.isActive,
       createdAt: a.createdAt,
 
-      clinic: a.Admin
-        ? {
-            id: a.Admin.id,
-            clinicName: a.Admin.clinicName,
-            location: a.Admin.location,
-            subsValidity: a.Admin.subsValidity
-          }
-        : null
-    }))
+      clinic: {
+        id: a.id,
+        clinicName: a.clinicName,
+        location: a.location,
+        subsValidity: a.subsValidity
+      }
+    }));
 
     res.status(200).json({
       success: true,
-      count: formatted.length,
-      data: formatted
-    })
+      count: data.length,
+      data
+    });
+
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
+
 
 exports.getAdminById = async (req, res, next) => {
   try {

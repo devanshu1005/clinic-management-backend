@@ -98,33 +98,6 @@ exports. createDoctor = async (req, res, next) => {
 };
 
 
-exports.getDoctorProfile = async (req, res, next) => {
-  try {
-    const { doctorId } = req.params;
-
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: doctorId },
-      include: { user: true },
-    });
-
-    if (!doctor)
-      return res.status(404).json({ success: false, error: "Doctor not found" });
-
-    // Doctor can view their own profile
-    if (req.user.role === "DOCTOR" && req.user.id !== doctor.userId) {
-      return res.status(403).json({
-        success: false,
-        error: "Access denied",
-      });
-    }
-
-    res.json({ success: true, data: doctor });
-  } catch (error) {
-    next(error);
-  }
-};
-
-
 exports.updateDoctor = async (req, res, next) => {
   try {
     const { doctorId } = req.params;

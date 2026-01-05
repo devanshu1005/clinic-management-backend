@@ -8,9 +8,12 @@ const {
   adminUpdateDoctorPassword
 } = require("../controllers/doctorController");
 
-router.post("/create-doctor", protect, createDoctor); // Admin only
+router.post("/create-doctor", protect, createDoctor); 
+
+router.put("/:doctorId/password", protect, adminUpdateDoctorPassword); 
+
 router.get("/:doctorId", protect, getDoctorProfile); 
 router.put("/:doctorId", protect, updateDoctor); 
-router.put("/:doctorId/password", protect, adminUpdateDoctorPassword); 
+
 
 module.exports = router;
