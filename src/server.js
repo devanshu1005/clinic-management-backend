@@ -38,22 +38,22 @@ const corsOptions = {
 
 // Apply CORS middleware
 
-/*const allowedOrigins = process.env.ALLOWED_ORIGINS 
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:3000'] // Default for development. 
 
 const corsOptions = {
-  // origin: function (origin, callback) {
-  //   // Allow requests with no origin (like mobile apps, Postman, curl)
-  //   if (!origin) return callback(null, true)
+  origin: function (origin, callback) {
+     // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true)
     
-  //   // Check if origin is in whitelist
-  //   if (allowedOrigins.indexOf(origin) !== -1) {
-  //     callback(null, true)
-  //   } else {
-  //     callback(new Error('Not allowed by CORS'))
-  //   }
-  // },
+    // Check if origin is in whitelist
+    if (allowedOrigins.indexOf(origin) !== -1) {
+       callback(null, true)
+     } else {
+       callback(new Error('Not allowed by CORS'))
+     }
+   },
   credentials: true, // Allow cookies and authorization headers
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -61,7 +61,7 @@ const corsOptions = {
 }
 
 // Apply CORS middleware
-app.use(cors(corsOptions))*/
+app.use(cors(corsOptions))
 
 // Middleware
 app.use(express.json())
