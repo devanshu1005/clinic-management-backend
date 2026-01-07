@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "postinstall":"npx prisma generate",
+    "postinstall": "npx prisma generate",
     "build": "npm install",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
@@ -22,7 +22,8 @@
     "express": "^5.1.0",
     "express-validator": "^7.3.1",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^7.0.11"
+    "nodemailer": "^7.0.11",
+    "resend": "^6.6.0"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",
