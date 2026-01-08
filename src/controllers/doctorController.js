@@ -124,6 +124,50 @@ exports.getDoctorProfile = async (req, res, next) => {
   }
 };
 
+exports.getAllDoctors = async (req, res, next) => {
+  try {
+    const allowedRoles = ["ADMIN", "RECEPTIONIST", "PATIENT"];
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: "Access denied",
+      });
+    }
+
+    const doctors = await prisma.doctor.findMany({
+      select: {
+        id: true,
+        qualification: true,
+        experience: true,
+        department: true,
+        shift: true,
+        consultationFee: true,
+        availabilityDays: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: {
+        user: { name: "asc" },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: doctors.length,
+      data: doctors,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 exports.updateDoctor = async (req, res, next) => {
   try {

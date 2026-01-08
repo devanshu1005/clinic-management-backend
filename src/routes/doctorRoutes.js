@@ -5,10 +5,13 @@ const {
   createDoctor,
   getDoctorProfile,
   updateDoctor,
-  adminUpdateDoctorPassword
+  adminUpdateDoctorPassword,
+  getAllDoctors
 } = require("../controllers/doctorController");
 
-router.post("/create-doctor", protect, createDoctor); 
+router.post("/create-doctor", protect, createDoctor);
+
+router.get("/all-doctors", protect, getAllDoctors); 
 
 router.put("/:doctorId/password", protect, adminUpdateDoctorPassword); 
 
