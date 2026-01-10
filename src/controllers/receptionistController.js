@@ -3,9 +3,8 @@ const prisma = require("../config/db");
 const { sendCredentialsEmail } = require("../services/emailServices");
 const { generatePassword } = require("../utils/otpServices");
 
-// =====================================================================
 // CREATE RECEPTIONIST (ADMIN only)
-// =====================================================================
+
 exports.createReceptionist = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
@@ -27,6 +26,7 @@ exports.createReceptionist = async (req, res, next) => {
       address,
       deskNumber,
       shiftTiming,
+      canEditPatient 
     } = req.body;
 
     // Check email exists
@@ -66,13 +66,19 @@ if (aadhaarExists) {
           },
         },
         experience,
-        salary: Number(salary),
+        salary: {
+          amount: Number(salary),
+          lastRevisionDate: null,
+          revisions: [],
+          adjustments: []
+        },
         shift,
         gender,
         aadhaar,
         address,
         deskNumber,
         shiftTiming,
+        canEditPatient, 
       },
       include: {
         user: true,
@@ -100,9 +106,9 @@ if (aadhaarExists) {
   }
 };
 
-// =====================================================================
+
 // GET RECEPTIONIST PROFILE
-// =====================================================================
+
 exports.getReceptionistProfile = async (req, res, next) => {
   try {
     const { receptionistId } = req.params;
@@ -136,9 +142,8 @@ exports.getReceptionistProfile = async (req, res, next) => {
   }
 };
 
-// =====================================================================
 // UPDATE RECEPTIONIST
-// =====================================================================
+
 exports.updateReceptionist = async (req, res, next) => {
   try {
     const { receptionistId } = req.params;
@@ -178,6 +183,7 @@ exports.updateReceptionist = async (req, res, next) => {
       address,
       deskNumber,
       shiftTiming,
+      canEditPatient,
     } = req.body;
 
     // Receptionist can edit limited fields
@@ -206,13 +212,18 @@ exports.updateReceptionist = async (req, res, next) => {
       where: { id: receptionistId },
       data: {
         experience,
-        salary,
         shift,
         gender,
         aadhaar,
         address,
         deskNumber,
         shiftTiming,
+        canEditPatient,
+        salary: salary
+        ? {
+            amount: Number(salary),
+          }
+        : undefined,
         user: { update: { name, phone } },
       },
       include: { user: true },
@@ -276,9 +287,8 @@ exports.adminUpdateReceptionistPassword = async (req, res, next) => {
     next(error);
   }
 };
-// =====================================================================
 // GET ALL RECEPTIONISTS (ADMIN only)
-// =====================================================================
+
 exports.getAllReceptionists = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
@@ -287,11 +297,25 @@ exports.getAllReceptionists = async (req, res, next) => {
         error: "Only Admin can view all receptionists",
       });
     }
+    //pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Status filter (active / deactive)
+    const status = req.query.status; // "active" | "deactive"
+    let isActiveFilter = true;
+    if (status === "inactive") {
+      isActiveFilter = false;
+    }
+
 
     const receptionists = await prisma.receptionist.findMany({
+      skip,
+      take: limit,
       where: {
         user: {
-          isActive: true, // only active receptionists
+          isActive: isActiveFilter,
         },
       },
       include: {
@@ -301,18 +325,22 @@ exports.getAllReceptionists = async (req, res, next) => {
         createdAt: "desc",
       },
     });
+    
 
     res.json({
       success: true,
+      page,
+      limit,
       data: receptionists,
     });
+    
   } catch (error) {
     next(error);
   }
 };
-// =====================================================================
+
 // DISABLE RECEPTIONIST (ADMIN only)
-// =====================================================================
+
 exports.disableReceptionist = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {

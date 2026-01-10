@@ -3,9 +3,9 @@ const prisma = require("../config/db");
 const { sendCredentialsEmail } = require("../services/emailServices");
 const { generatePassword } = require("../utils/otpServices");
 
-// =====================================================================
+
 // CREATE STAFF (ADMIN only)
-// =====================================================================
+
 exports.createStaff = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
@@ -73,7 +73,12 @@ exports.createStaff = async (req, res, next) => {
         skill,
         category,
         experience,
-        salary: Number(salary),
+        salary: {
+          amount: Number(salary),
+          lastRevisionDate: null,
+          revisions: [],
+          adjustments: [],
+        },
         shift,
         gender,
         aadhaar,
@@ -108,9 +113,8 @@ exports.createStaff = async (req, res, next) => {
   }
 };
 
-// =====================================================================
 // GET STAFF PROFILE
-// =====================================================================
+
 exports.getStaffProfile = async (req, res, next) => {
   try {
     const { staffId } = req.params;
@@ -141,9 +145,9 @@ exports.getStaffProfile = async (req, res, next) => {
   }
 };
 
-// =====================================================================
+
 // GET ALL STAFF (ADMIN only)
-// =====================================================================
+
 exports.getAllStaff = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
@@ -152,24 +156,42 @@ exports.getAllStaff = async (req, res, next) => {
         error: "Only Admin can view all staff",
       });
     }
-
+    //pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    const status = req.query.status; // "active" | "deactive"
+    let isActiveFilter = true;
+    if (status === "deactive") {
+      isActiveFilter = false;
+    }
     const staff = await prisma.staff.findMany({
+      skip,
+      take: limit,
       where: {
-        user: { isActive: true },
+        user: {
+          isActive: isActiveFilter,
+        },
       },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     });
 
-    res.json({ success: true, data: staff });
+    res.json({
+      success: true,
+      page,
+      limit,
+      data: staff,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-// =====================================================================
+
 // UPDATE STAFF
-// =====================================================================
+
 exports.updateStaff = async (req, res, next) => {
   try {
     const { staffId } = req.params;
@@ -220,7 +242,6 @@ exports.updateStaff = async (req, res, next) => {
         skill,
         category,
         experience,
-        salary,
         shift,
         gender,
         aadhaar,
@@ -230,6 +251,11 @@ exports.updateStaff = async (req, res, next) => {
         staffCode,
         joiningDate,
         roleBadge,
+        salary: salary
+          ? {
+              amount: Number(salary),
+            }
+          : undefined,
         user: { update: { name, phone } },
       },
       include: { user: true },
@@ -245,9 +271,8 @@ exports.updateStaff = async (req, res, next) => {
   }
 };
 
-// =====================================================================
 // ADMIN UPDATE STAFF PASSWORD
-// =====================================================================
+
 exports.adminUpdateStaffPassword = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
@@ -287,9 +312,7 @@ exports.adminUpdateStaffPassword = async (req, res, next) => {
   }
 };
 
-// =====================================================================
 // DISABLE STAFF (ADMIN only)
-// =====================================================================
 exports.disableStaff = async (req, res, next) => {
   try {
     if (req.user.role !== "ADMIN") {
