@@ -124,6 +124,72 @@ exports.getDoctorProfile = async (req, res, next) => {
   }
 };
 
+exports.getAllDoctors = async (req, res, next) => {
+  try {
+    const allowedRoles = ["ADMIN", "RECEPTIONIST", "PATIENT"];
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        code: "FORBIDDEN",
+        message: "You are not allowed to view doctors",
+      });
+    }
+
+    const status = req.query.status ?? "active";
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Number(req.query.limit) || 10); // cap limit
+
+    let userFilter = {};
+    if (status === "active") userFilter.isActive = true;
+    else if (status === "inactive") userFilter.isActive = false;
+
+    const where = { user: userFilter };
+
+    const [total, doctors] = await Promise.all([
+      prisma.doctor.count({ where }),
+      prisma.doctor.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          qualification: true,
+          experience: true,
+          department: true,
+          shift: true,
+          consultationFee: true,
+          availabilityDays: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              isActive: true,
+            },
+          },
+        },
+        orderBy: { user: { name: "asc" } },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      code: "DOCTORS_FETCHED",
+      message: "Doctors fetched successfully",
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+      data: doctors,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 exports.updateDoctor = async (req, res, next) => {
   try {
@@ -245,6 +311,55 @@ exports.adminUpdateDoctorPassword = async (req, res, next) => {
     res.json({
       success: true,
       message: "Password updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.disableDoctor = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        code: "FORBIDDEN",
+        message: "Only Admin can update doctor status",
+      });
+    }
+
+    const { doctorId } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_INPUT",
+        message: "isActive must be true or false",
+      });
+    }
+
+    const doctor = await prisma.doctor.findUnique({
+      where: { id: doctorId },
+      include: { user: true },
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        code: "DOCTOR_NOT_FOUND",
+        message: "Doctor not found",
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: doctor.userId },
+      data: { isActive },
+    });
+
+    return res.status(200).json({
+      success: true,
+      code: "DOCTOR_STATUS_UPDATED",
+      message: `Doctor has been ${isActive ? "activated" : "deactivated"} successfully`,
     });
   } catch (error) {
     next(error);
