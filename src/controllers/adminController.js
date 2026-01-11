@@ -78,13 +78,13 @@ exports.createAdmin = async (req, res, next) => {
 
 
     // Send credentials via email
-    await sendCredentialsEmail(email, {
-      name: adminName,
-      email: email,
-      password: generatedPassword,
-      clinicName: clinicName,
-      loginUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/login`
-    })
+    // await sendCredentialsEmail(email, {
+    //   name: adminName,
+    //   email: email,
+    //   password: generatedPassword,
+    //   clinicName: clinicName,
+    //   loginUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/login`
+    // })
 
     res.status(201).json({
   success: true,

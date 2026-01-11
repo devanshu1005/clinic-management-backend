@@ -77,12 +77,12 @@ exports. createDoctor = async (req, res, next) => {
     });
 
     // Send credentials via email
-    await sendCredentialsEmail(email, {
-      name,
-      email,
-      password: rawPassword,
-      loginUrl: `${process.env.CLIENT_URL}/login`,
-    });
+    // await sendCredentialsEmail(email, {
+    //   name,
+    //   email,
+    //   password: rawPassword,
+    //   loginUrl: `${process.env.CLIENT_URL}/login`,
+    // });
 
     res.status(201).json({
       success: true,
