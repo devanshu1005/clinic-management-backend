@@ -7,13 +7,20 @@ const {
   getAllAdmins,
   searchAdmins,           // ← Add
   quickSearchAdmins,      // ← Add
-  advancedSearchAdmins    // ← Add
+  advancedSearchAdmins,
+  getStaffDashboardSummary   
 } = require('../controllers/dashboardController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
 
 // All routes require authentication
 router.use(protect)
+// Staff Dashboard (Admin only)
+router.get(
+  '/staff',
+  authorize('ADMIN'),
+  getStaffDashboardSummary
+)
 
 // Super Admin routes
 router.get('/super-admin', authorize('SUPER_ADMIN'), getSuperAdminDashboard)
