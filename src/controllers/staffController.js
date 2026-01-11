@@ -161,9 +161,9 @@ exports.getAllStaff = async (req, res, next) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     
-    const status = req.query.status; // "active" | "deactive"
+    const status = req.query.status; // "active" | "inactive"
     let isActiveFilter = true;
-    if (status === "deactive") {
+    if (status === "inactive") {
       isActiveFilter = false;
     }
     const staff = await prisma.staff.findMany({
@@ -343,6 +343,51 @@ exports.disableStaff = async (req, res, next) => {
     res.json({
       success: true,
       message: "Staff disabled successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// STAFF DASHBOARD SUMMARY (ADMIN only)
+
+exports.getStaffDashboardSummary = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access staff dashboard",
+      });
+    }
+
+    const totalStaff = await prisma.staff.count();
+
+    const activeStaff = await prisma.staff.count({
+      where: { user: { isActive: true } },
+    });
+
+    const inactiveStaff = await prisma.staff.count({
+      where: { user: { isActive: false } },
+    });
+
+    const activeStaffSalaries = await prisma.staff.findMany({
+      where: { user: { isActive: true } },
+      select: { salary: true },
+    });
+
+    const totalPayroll = activeStaffSalaries.reduce(
+      (sum, staff) => sum + (staff.salary?.amount || 0),
+      0
+    );
+
+    res.json({
+      success: true,
+      data: {
+        totalStaff,
+        activeStaff,
+        inactiveStaff,
+        totalPayroll,
+      },
     });
   } catch (error) {
     next(error);

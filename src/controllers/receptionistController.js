@@ -302,8 +302,8 @@ exports.getAllReceptionists = async (req, res, next) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Status filter (active / deactive)
-    const status = req.query.status; // "active" | "deactive"
+    // Status filter (active / inactive)
+    const status = req.query.status; // "active" | "inactive"
     let isActiveFilter = true;
     if (status === "inactive") {
       isActiveFilter = false;
