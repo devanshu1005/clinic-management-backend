@@ -178,35 +178,62 @@ exports.getAllAdmins = async (req, res, next) => {
     if (req.user.role !== "SUPER_ADMIN") {
       return res.status(403).json({
         success: false,
-        error: "Only Super Admin can view admins"
+        code: "FORBIDDEN",
+        message: "Only Super Admin can view admins",
       });
     }
 
-    const admins = await prisma.admin.findMany({
-      select: {
-        id: true,
-        clinicName: true,
-        location: true,
-        subsValidity: true,
-        createdAt: true,
+    const {
+      status = "active",
+      page = 1,
+      limit = 10,
+    } = req.query;
 
-        // join user
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            isActive: true,
-            role: true
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    });
+    const pageNumber = Math.max(1, Number(page));
+    const pageSize = Math.min(50, Number(limit)); // safety cap
+    const skip = (pageNumber - 1) * pageSize;
 
-    // Format clean JSON
-    const data = admins.map(a => ({
+    // status filter
+    let userFilter = {};
+    if (status === "active") userFilter.isActive = true;
+    if (status === "inactive") userFilter.isActive = false;
+    // status === "all" → no filter
+
+    const whereClause = {
+      user: userFilter,
+    };
+
+    const [total, admins] = await Promise.all([
+      prisma.admin.count({ where: whereClause }),
+
+      prisma.admin.findMany({
+        where: whereClause,
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          clinicName: true,
+          location: true,
+          subsValidity: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              isActive: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+    ]);
+
+    const data = admins.map((a) => ({
       id: a.user.id,
       name: a.user.name,
       email: a.user.email,
@@ -214,21 +241,27 @@ exports.getAllAdmins = async (req, res, next) => {
       role: a.user.role,
       isActive: a.user.isActive,
       createdAt: a.createdAt,
-
       clinic: {
         id: a.id,
         clinicName: a.clinicName,
         location: a.location,
-        subsValidity: a.subsValidity
-      }
+        subsValidity: a.subsValidity,
+      },
     }));
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      count: data.length,
-      data
+      code: "ADMINS_FETCHED",
+      message: "Admins fetched successfully",
+      meta: {
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+        status,
+      },
+      data,
     });
-
   } catch (error) {
     next(error);
   }
@@ -238,12 +271,12 @@ exports.getAllAdmins = async (req, res, next) => {
 exports.getAdminById = async (req, res, next) => {
   try {
     // Only Super Admin can access
-    // if (req.user.role !== 'SUPER_ADMIN') {
-    //   return res.status(403).json({
-    //     success: false,
-    //     error: 'Only Super Admin can view admin details'
-    //   });
-    // }
+    if (req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only Super Admin can view admin details'
+      });
+    }
 
     const { id } = req.params;
 
@@ -300,6 +333,65 @@ exports.getAdminById = async (req, res, next) => {
       data: response
     });
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.disableAdmin = async (req, res, next) => {
+  try {
+    if (req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        success: false,
+        code: "FORBIDDEN",
+        message: "Only Super Admin can update admin status",
+      });
+    }
+
+    const { adminId } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_INPUT",
+        message: "isActive must be true or false",
+      });
+    }
+
+    // Check admin exists
+    const admin = await prisma.admin.findUnique({
+      where: { userId: adminId },
+      include: { user: true },
+    });
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        code: "ADMIN_NOT_FOUND",
+        message: "Admin not found",
+      });
+    }
+
+    // Prevent disabling yourself
+    if (admin.userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        code: "SELF_DISABLE_NOT_ALLOWED",
+        message: "You cannot deactivate yourself",
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: admin.userId },
+      data: { isActive },
+    });
+
+    return res.status(200).json({
+      success: true,
+      code: "ADMIN_STATUS_UPDATED",
+      message: `Admin has been ${isActive ? "activated" : "deactivated"} successfully`,
+    });
   } catch (error) {
     next(error);
   }

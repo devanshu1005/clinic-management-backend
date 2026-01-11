@@ -33,6 +33,7 @@ model User {
   Receptionist Receptionist?
   Staff        Staff?
 
+  @@index([isActive])
   @@index([email])
   @@index([phone])
   @@map("users")
@@ -64,9 +65,11 @@ model Admin {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
+  @@index([userId])
   @@index([clinicName])
   @@index([subsValidity])
+  @@index([createdAt])
   @@map("admins")
 }
 
