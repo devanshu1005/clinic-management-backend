@@ -8,12 +8,12 @@ const {
   getAllStaff,
   updateStaff,
   adminUpdateStaffPassword,
-  disableStaff
+  disableStaff,
+ 
 } = require("../controllers/staffController");
 
 // ADMIN creates staff
 router.post("/create-staff", protect, createStaff);
-
 // Get single staff profile
 router.get("/:staffId", protect, getStaffProfile);
 

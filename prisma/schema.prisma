@@ -136,6 +136,8 @@ model Receptionist {
   aadhaar    String      @unique
   address    String
 
+  canEditPatient Boolean @default(false)
+
   // Optional fields
   deskNumber  String?
   shiftTiming String?
