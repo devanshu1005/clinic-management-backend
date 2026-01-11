@@ -133,7 +133,7 @@ model Receptionist {
   aadhaar    String      @unique
   address    String
 
-  CanEditPatient Boolean @default(false)
+  canEditPatient Boolean @default(false)
 
   // Optional fields
   deskNumber  String?
