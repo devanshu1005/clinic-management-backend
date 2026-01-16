@@ -279,35 +279,41 @@ exports.adminUpdateReceptionistPassword = async (req, res, next) => {
   }
 };
 // GET ALL RECEPTIONISTS (ADMIN only)
-
+// Supports: active | inactive | all
 exports.getAllReceptionists = async (req, res, next) => {
   try {
+    // Only ADMIN can access
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({
         success: false,
         error: "Only Admin can view all receptionists",
       });
     }
-    //pagination
+
+    // Pagination
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Status filter (active / inactive)
-    const status = req.query.status; // "active" | "inactive"
-    let isActiveFilter = true;
+    // Status filter
+    // status = active | inactive | all
+    const status = req.query.status;
+
+    let userFilter = { isActive: true }; // default → active
+
     if (status === "inactive") {
-      isActiveFilter = false;
+      userFilter.isActive = false;
     }
 
+    if (status === "all") {
+      userFilter = {}; // no filter → active + inactive
+    }
 
     const receptionists = await prisma.receptionist.findMany({
       skip,
       take: limit,
       where: {
-        user: {
-          isActive: isActiveFilter,
-        },
+        user: userFilter,
       },
       include: {
         user: true,
@@ -316,19 +322,18 @@ exports.getAllReceptionists = async (req, res, next) => {
         createdAt: "desc",
       },
     });
-    
 
-    res.json({
+    res.status(200).json({
       success: true,
       page,
       limit,
       data: receptionists,
     });
-    
   } catch (error) {
     next(error);
   }
 };
+
 
 // DISABLE RECEPTIONIST (ADMIN only)
 
