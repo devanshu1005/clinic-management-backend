@@ -66,12 +66,7 @@ if (aadhaarExists) {
           },
         },
         experience,
-        salary: {
-          amount: Number(salary),
-          lastRevisionDate: null,
-          revisions: [],
-          adjustments: []
-        },
+        salary: Number(salary),
         shift,
         gender,
         aadhaar,
@@ -219,11 +214,7 @@ exports.updateReceptionist = async (req, res, next) => {
         deskNumber,
         shiftTiming,
         canEditPatient,
-        salary: salary
-        ? {
-            amount: Number(salary),
-          }
-        : undefined,
+        salary: salary ? Number(salary) : undefined,
         user: { update: { name, phone } },
       },
       include: { user: true },

@@ -7,6 +7,7 @@ const doctorRoutes = require('./routes/doctorRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes')
 const receptionistRoutes = require('./routes/receptionistRoutes')
 const staffRoutes = require('./routes/staffRoutes');
+const salaryRoutes = require("./routes/salaryRoutes");
 const errorHandler = require('./middlewares/errorHandler')
 const prisma = require('./config/db')
 
@@ -103,7 +104,7 @@ app.use('/api/doctor', doctorRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/receptionist', receptionistRoutes)
 app.use('/api/staff', staffRoutes);
-
+app.use("/api/salary", salaryRoutes);
 
 
 

@@ -267,7 +267,7 @@ exports.getStaffDashboardSummary = async (req, res, next) => {
     });
 
     const totalPayroll = activeStaffSalaries.reduce(
-      (sum, staff) => sum + (staff.salary?.amount || 0),
+      (sum, staff) => sum + (staff.salary || 0),
       0
     );
 
@@ -284,6 +284,295 @@ exports.getStaffDashboardSummary = async (req, res, next) => {
     next(error);
   }
 };
+// =============================================
+// SALARY DASHBOARD - LIST STAFF / RECEPTIONIST / DOCTOR / ALL
+// ADMIN only
+// =============================================
+exports.getSalaryDashboardList = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access salary dashboard",
+      });
+    }
+
+    const {
+      userRole, // STAFF | RECEPTIONIST | DOCTOR | ALL
+      month,
+      year,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    if (!userRole) {
+      return res.status(400).json({
+        success: false,
+        error: "userRole is required",
+      });
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    let employees = [];
+    let totalCount = 0;
+
+    // -------- STAFF --------
+    if (userRole === "STAFF") {
+      totalCount = await prisma.staff.count();
+
+      const staff = await prisma.staff.findMany({
+        skip,
+        take: Number(limit),
+        select: {
+          userId: true,
+          salary: true,
+          user: { select: { name: true, isActive: true } },
+        },
+      });
+
+      employees = staff.map(s => ({
+        userId: s.userId,
+        name: s.user.name,
+        role: "STAFF",
+        baseSalary: s.salary,
+        isActive: s.user.isActive,
+      }));
+    }
+
+    // -------- RECEPTIONIST --------
+    if (userRole === "RECEPTIONIST") {
+      totalCount = await prisma.receptionist.count();
+
+      const receptionists = await prisma.receptionist.findMany({
+        skip,
+        take: Number(limit),
+        select: {
+          userId: true,
+          salary: true,
+          user: { select: { name: true, isActive: true } },
+        },
+      });
+
+      employees = receptionists.map(r => ({
+        userId: r.userId,
+        name: r.user.name,
+        role: "RECEPTIONIST",
+        baseSalary: r.salary,
+        isActive: r.user.isActive,
+      }));
+    }
+
+    // -------- DOCTOR --------
+    if (userRole === "DOCTOR") {
+      totalCount = await prisma.doctor.count();
+
+      const doctors = await prisma.doctor.findMany({
+        skip,
+        take: Number(limit),
+        select: {
+          userId: true,
+          salary: true,
+          user: { select: { name: true, isActive: true } },
+        },
+      });
+
+      employees = doctors.map(d => ({
+        userId: d.userId,
+        name: d.user.name,
+        role: "DOCTOR",
+        baseSalary: d.salary,
+        isActive: d.user.isActive,
+      }));
+    }
+
+    // -------- ALL EMPLOYEES --------
+    if (userRole === "ALL") {
+      const [staffCount, receptionistCount, doctorCount] = await Promise.all([
+        prisma.staff.count(),
+        prisma.receptionist.count(),
+        prisma.doctor.count(),
+      ]);
+
+      totalCount = staffCount + receptionistCount + doctorCount;
+
+      const [staff, receptionists, doctors] = await Promise.all([
+        prisma.staff.findMany({
+          skip,
+          take: Number(limit),
+          select: {
+            userId: true,
+            salary: true,
+            user: { select: { name: true, isActive: true } },
+          },
+        }),
+        prisma.receptionist.findMany({
+          skip,
+          take: Number(limit),
+          select: {
+            userId: true,
+            salary: true,
+            user: { select: { name: true, isActive: true } },
+          },
+        }),
+        prisma.doctor.findMany({
+          skip,
+          take: Number(limit),
+          select: {
+            userId: true,
+            salary: true,
+            user: { select: { name: true, isActive: true } },
+          },
+        }),
+      ]);
+
+      employees = [
+        ...staff.map(s => ({
+          userId: s.userId,
+          name: s.user.name,
+          role: "STAFF",
+          baseSalary: s.salary,
+          isActive: s.user.isActive,
+        })),
+        ...receptionists.map(r => ({
+          userId: r.userId,
+          name: r.user.name,
+          role: "RECEPTIONIST",
+          baseSalary: r.salary,
+          isActive: r.user.isActive,
+        })),
+        ...doctors.map(d => ({
+          userId: d.userId,
+          name: d.user.name,
+          role: "DOCTOR",
+          baseSalary: d.salary,
+          isActive: d.user.isActive,
+        })),
+      ];
+    }
+
+    // -------- ATTACH SALARY ADJUSTMENTS --------
+    const data = await Promise.all(
+      employees.map(async emp => {
+        const adjustments = await prisma.salary.findMany({
+          where: {
+            userId: emp.userId,
+            userRole: emp.role,
+            ...(month && { month: Number(month) }),
+            ...(year && { year: Number(year) }),
+          },
+        });
+
+        let bonus = 0;
+        let penalty = 0;
+
+        adjustments.forEach(a => {
+          if (a.type === "BONUS") bonus += a.amount;
+          if (a.type === "PENALTY") penalty += a.amount;
+        });
+
+        return {
+          ...emp,
+          bonus,
+          penalty,
+          adjustments,
+          netSalary: emp.baseSalary + bonus - penalty,
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / Number(limit)),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// =============================================
+// SALARY DASHBOARD SUMMARY
+// ADMIN only
+// =============================================
+exports.getSalaryDashboardSummary = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access salary dashboard",
+      });
+    }
+
+    const { userRole, month, year } = req.query;
+
+    if (!userRole) {
+      return res.status(400).json({
+        success: false,
+        error: "userRole is required",
+      });
+    }
+
+    const salaryRecords = await prisma.salary.findMany({
+      where: {
+        userRole,
+        ...(month && { month: Number(month) }),
+        ...(year && { year: Number(year) }),
+      },
+    });
+
+    let totalBonus = 0;
+    let totalPenalty = 0;
+
+    salaryRecords.forEach(s => {
+      if (s.type === "BONUS") totalBonus += s.amount;
+      if (s.type === "PENALTY") totalPenalty += s.amount;
+    });
+
+    let baseSalaries = [];
+
+    if (userRole === "STAFF") {
+      baseSalaries = await prisma.staff.findMany({ select: { salary: true } });
+    }
+
+    if (userRole === "RECEPTIONIST") {
+      baseSalaries = await prisma.receptionist.findMany({ select: { salary: true } });
+    }
+
+    if (userRole === "DOCTOR") {
+      baseSalaries = await prisma.doctor.findMany({ select: { salary: true } });
+    }
+
+    const totalBaseSalary = baseSalaries.reduce(
+      (sum, s) => sum + s.salary,
+      0
+    );
+
+    const totalMonthlySalary =
+      totalBaseSalary + totalBonus - totalPenalty;
+
+    res.json({
+      success: true,
+      data: {
+        totalMonthlySalary,
+        averageSalary:
+          baseSalaries.length > 0
+            ? Math.round(totalMonthlySalary / baseSalaries.length)
+            : 0,
+        totalBonus,
+        totalPenalty,
+        pendingAdjustment: totalBonus - totalPenalty,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // =============================================
 // GET ADMIN STATISTICS (Super Admin)
 // =============================================
