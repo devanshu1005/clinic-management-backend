@@ -127,8 +127,8 @@ model Receptionist {
 
   // Receptionist Details
   experience String?
-  salary     Int
   shift      Shift
+  salary      Int
   gender     GenderRoles
   aadhaar    String      @unique
   address    String
@@ -156,7 +156,7 @@ model Staff {
   skill      String
   category   StaffCategory
   experience String?
-  salary     Int
+   salary      Int
   shift      Shift
   gender     GenderRoles
   aadhaar    String        @unique
@@ -185,4 +185,30 @@ enum StaffCategory {
   ATTENDANT
   CLEANING
   OTHER
+}
+model Salary {
+  id String @id @default(uuid())
+
+  userId   String
+  userRole UserRole   // STAFF or RECEPTIONIST and Doctor
+
+  type     SalaryType // BONUS, PENALTY, REVISION
+  amount   Int
+
+  reason   String?
+  month    Int        // 1 to 12
+  year     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userRole])
+  @@index([month, year])
+  @@map("salaries")
+}
+enum SalaryType {
+  BONUS
+  PENALTY
+  REVISION
 }

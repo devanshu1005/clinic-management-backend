@@ -8,7 +8,9 @@ const {
   searchAdmins,           // ← Add
   quickSearchAdmins,      // ← Add
   advancedSearchAdmins,
-  getStaffDashboardSummary   
+  getStaffDashboardSummary, 
+  getSalaryDashboardList,      // ✅ ADD
+  getSalaryDashboardSummary    
 } = require('../controllers/dashboardController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -20,6 +22,23 @@ router.get(
   '/staff',
   authorize('ADMIN'),
   getStaffDashboardSummary
+)
+// =============================================
+// SALARY DASHBOARD ROUTES (ADMIN only)
+// =============================================
+router.get(
+  '/salary/list',
+  authorize('ADMIN'),
+  getSalaryDashboardList
+)
+ //http://localhost:5050/api/dashboard/salary/list?userRole=ALL&page=1&limit=10
+//http://localhost:5050/api/dashboard/salary/list?userRole=ALL
+//http://localhost:5050/api/dashboard/salary/list?userRole=ALL&month=1&year=2026
+
+router.get(
+  '/salary/summary',
+  authorize('ADMIN'),
+  getSalaryDashboardSummary
 )
 
 // Super Admin routes
