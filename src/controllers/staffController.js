@@ -73,12 +73,7 @@ exports.createStaff = async (req, res, next) => {
         skill,
         category,
         experience,
-        salary: {
-          amount: Number(salary),
-          lastRevisionDate: null,
-          revisions: [],
-          adjustments: [],
-        },
+        salary: Number(salary),
         shift,
         gender,
         aadhaar,
@@ -161,23 +156,28 @@ exports.getAllStaff = async (req, res, next) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     
-    const status = req.query.status; // "active" | "inactive"
-    let isActiveFilter = true;
+    const status = req.query.status; // active | inactive | all
+
+    let userFilter = { isActive: true };
+    
     if (status === "inactive") {
-      isActiveFilter = false;
+      userFilter.isActive = false;
     }
+    
+    if (status === "all") {
+      userFilter = {};
+    }
+    
     const staff = await prisma.staff.findMany({
       skip,
       take: limit,
       where: {
-        user: {
-          isActive: isActiveFilter,
-        },
+        user: userFilter,
       },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     });
-
+Z    
     res.json({
       success: true,
       page,
@@ -251,11 +251,7 @@ exports.updateStaff = async (req, res, next) => {
         staffCode,
         joiningDate,
         roleBadge,
-        salary: salary
-          ? {
-              amount: Number(salary),
-            }
-          : undefined,
+        salary: salary ? Number(salary) : undefined,
         user: { update: { name, phone } },
       },
       include: { user: true },
