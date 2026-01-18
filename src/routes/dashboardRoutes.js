@@ -10,7 +10,11 @@ const {
   advancedSearchAdmins,
   getStaffDashboardSummary, 
   getSalaryDashboardList,      // ✅ ADD
-  getSalaryDashboardSummary    
+  getSalaryDashboardSummary,
+  getLeaveDashboardSummary,
+  getEmployeesOnLeaveToday,
+  getUpcomingLeaves, 
+  getPendingLeavesDashboard   
 } = require('../controllers/dashboardController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -40,6 +44,11 @@ router.get(
   authorize('ADMIN'),
   getSalaryDashboardSummary
 )
+router.get("/leave-summary", protect, getLeaveDashboardSummary);
+router.get("/leave-today", protect, getEmployeesOnLeaveToday);
+router.get("/leave-upcoming", protect, getUpcomingLeaves);
+router.get("/leave-pending", protect, getPendingLeavesDashboard);
+
 
 // Super Admin routes
 router.get('/super-admin', authorize('SUPER_ADMIN'), getSuperAdminDashboard)
