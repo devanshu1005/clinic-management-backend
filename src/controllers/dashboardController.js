@@ -574,6 +574,197 @@ exports.getSalaryDashboardSummary = async (req, res, next) => {
 };
 
 // =============================================
+// LEAVE DASHBOARD SUMMARY 
+// ADMIN only
+// =============================================
+exports.getLeaveDashboardSummary = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access leave dashboard",
+      });
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const next7Days = new Date();
+    next7Days.setDate(todayStart.getDate() + 7);
+
+    const [
+      totalLeaves,
+      pendingLeaves,
+      approvedToday,
+      onLeaveToday,
+      upcomingLeaves,
+    ] = await Promise.all([
+      prisma.leave.count(),
+
+      prisma.leave.count({
+        where: { status: "PENDING" },
+      }),
+
+      prisma.leave.count({
+        where: {
+          status: "APPROVED",
+          updatedAt: {
+            gte: todayStart,
+            lte: todayEnd,
+          },
+        },
+      }),
+
+      prisma.leave.count({
+        where: {
+          status: "APPROVED",
+          fromDate: { lte: todayEnd },
+          toDate: { gte: todayStart },
+        },
+      }),
+
+      prisma.leave.count({
+        where: {
+          status: "APPROVED",
+          fromDate: {
+            gte: todayStart,
+            lte: next7Days,
+          },
+        },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalLeaves,
+        pendingLeaves,
+        approvedToday,
+        onLeaveToday,
+        upcomingLeaves,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// =============================================
+// EMPLOYEES ON LEAVE TODAY
+// ADMIN only
+// =============================================
+exports.getEmployeesOnLeaveToday = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access this data",
+      });
+    }
+
+    const today = new Date();
+
+    const leaves = await prisma.leave.findMany({
+      where: {
+        status: "APPROVED",
+        fromDate: { lte: today },
+        toDate: { gte: today },
+      },
+      orderBy: { fromDate: "asc" },
+    });
+
+    res.json({
+      success: true,
+      data: leaves,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// =============================================
+// UPCOMING LEAVES (Next 7 days)
+// ADMIN only
+// =============================================
+exports.getUpcomingLeaves = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access upcoming leaves",
+      });
+    }
+
+    const today = new Date();
+    const next7Days = new Date();
+    next7Days.setDate(today.getDate() + 7);
+
+    const leaves = await prisma.leave.findMany({
+      where: {
+        status: "APPROVED",
+        fromDate: {
+          gte: today,
+          lte: next7Days,
+        },
+      },
+      orderBy: { fromDate: "asc" },
+    });
+
+    res.json({
+      success: true,
+      data: leaves,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// =============================================
+// PENDING LEAVES (Dashboard)
+// ADMIN only
+// =============================================
+exports.getPendingLeavesDashboard = async (req, res, next) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Only Admin can access pending leaves",
+      });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const leaves = await prisma.leave.findMany({
+      where: { status: "PENDING" },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+
+    const total = await prisma.leave.count({
+      where: { status: "PENDING" },
+    });
+
+    res.json({
+      success: true,
+      data: leaves,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// =============================================
 // GET ADMIN STATISTICS (Super Admin)
 // =============================================
 exports.getAdminStatistics = async (req, res, next) => {

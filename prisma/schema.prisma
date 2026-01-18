@@ -215,3 +215,55 @@ enum SalaryType {
   PENALTY
   REVISION
 }
+model Leave {
+  id String @id @default(uuid())
+
+  userId   String
+  userRole UserRole   // STAFF | RECEPTIONIST | DOCTOR | ADMIN
+
+  leaveType LeaveType // PAID | SICK | EMERGENCY | CASUAL
+
+  fromDate DateTime
+  toDate   DateTime
+
+  isHalfDay   Boolean     @default(false)
+  halfDayType HalfDayType?
+
+  totalDays Float
+  reason    String?
+
+  status LeaveStatus @default(PENDING)
+
+  appliedBy UserRole     // ADMIN or employee role
+  approvedBy String?     // admin userId
+
+  // policy snapshot (important)
+  isPaid      Boolean @default(true)
+  maxAllowed  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userRole])
+  @@index([status])
+  @@index([fromDate, toDate])
+  @@map("leaves")
+}
+enum LeaveType {
+  PAID
+  SICK
+  EMERGENCY
+  CASUAL
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum HalfDayType {
+  FIRST_HALF
+  SECOND_HALF
+}
