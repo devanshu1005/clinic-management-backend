@@ -1,18 +1,13 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
-const authRoutes = require('./routes/authRoutes')
-const adminRoutes = require('./routes/adminRoutes')
-const doctorRoutes = require('./routes/doctorRoutes')
-const dashboardRoutes = require('./routes/dashboardRoutes')
-const receptionistRoutes = require('./routes/receptionistRoutes')
-const staffRoutes = require('./routes/staffRoutes');
-const salaryRoutes = require("./routes/salaryRoutes");
-const leaveRoutes = require("./routes/leaveRoutes");
-const errorHandler = require('./middlewares/errorHandler')
-const prisma = require('./config/db')
+const apis = require('./src/apis')
+const connectDB = require("./src/config/db");
 
 const app = express()
+
+// Connect to MongoDB
+connectDB();
 
 /*const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
@@ -85,30 +80,7 @@ if (process.env.NODE_ENV === 'development') {
   })
 }
 
-async function init() {
-  try {
-    await prisma.$connect()
-    console.log("DB Connected Successfully")
-  } catch (err) {
-    console.error("DB Connection Failed", err)
-    process.exit(1)
-  }
-}
-
-init()
-
-
-// Routes
-app.use('/api/auth', authRoutes)
-app.use('/api/admin', adminRoutes)
-app.use('/api/doctor', doctorRoutes)
-app.use('/api/dashboard', dashboardRoutes)
-app.use('/api/receptionist', receptionistRoutes)
-app.use('/api/staff', staffRoutes);
-app.use("/api/salary", salaryRoutes);
-app.use("/api/leave", leaveRoutes);
-
-
+app.use('/api', apis)
 
 // Health check
 app.get('/health', (req, res) => {
