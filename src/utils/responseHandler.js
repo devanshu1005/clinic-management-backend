@@ -1,7 +1,9 @@
 const logger = require("./logger");
+const mongoose = require("mongoose");
 
 module.exports = (controllerFunction) => async (req, res, next) => {
   try {
+    const sessionStart = await  mongoose.startSession();
     const { statusCode = 200, ...resObj } = await controllerFunction(
       req,
       res,
