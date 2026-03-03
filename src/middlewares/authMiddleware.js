@@ -1,113 +1,125 @@
-const jwt = require('jsonwebtoken')
-const prisma = require('../config/db')
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const { user: User } = require("../models");
 
 const protect = async (req, res, next) => {
   try {
-    let token
+    let token;
 
-    // Extract token from Authorization header
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1]
+    // Extract token properly
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
 
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Not authorized. No token provided.' 
-      })
+      return res.status(401).json({
+        success: false,
+        error: "Not authorized. No token provided.",
+      });
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ============================================
-    // HANDLE SUPER ADMIN (from .env, not database)
-    // ============================================
-    if (decoded.role === 'SUPER_ADMIN') {
+    // ==============================
+    // HANDLE SUPER ADMIN (.env based)
+    // ==============================
+    if (
+      decoded.role === "SUPER_ADMIN" &&
+      decoded.email === process.env.SUPER_ADMIN_EMAIL
+    ) {
       req.user = {
         id: decoded.id,
-        role: 'SUPER_ADMIN',
-        email: process.env.SUPER_ADMIN_EMAIL || 'superadmin@appvibe.com',
-        name: 'Super Admin',
-        username: process.env.SUPER_ADMIN_USERNAME || 'appVibe'
-      }
-      return next()
+        role: "SUPER_ADMIN",
+        email: decoded.email,
+        name: "Super Admin",
+        username: process.env.SUPER_ADMIN_USERNAME || "appVibe",
+      };
+      return next();
     }
 
-    // ============================================
-    // HANDLE REGULAR USERS (from database)
-    // ============================================
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { 
-        id: true, 
-        email: true, 
-        name: true, 
-        role: true, 
-        isActive: true,
-        Admin: {
-          select: {
-            id: true,
-            clinicName: true,
-            location: true,
-            subsValidity: true
-          }
-        }
-      }
-    })
-
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'User not found' 
-      })
+    // ==============================
+    // VALIDATE OBJECT ID
+    // ==============================
+    if (!mongoose.Types.ObjectId.isValid(decoded.id)) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid user ID",
+      });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Account is inactive. Contact support.' 
-      })
+    // ==============================
+    // FIND USER (Mongoose way)
+    // ==============================
+    const userInfo = await User.findById(decoded.id)
+      .select("email name role isActive Admin")
+      .populate({
+        path: "Admin",
+        select: "clinicName location subsValidity",
+      });
+
+    if (!userInfo) {
+      return res.status(401).json({
+        success: false,
+        error: "User not found",
+      });
     }
 
-    // Check subscription validity for ADMIN role
-    if (user.role === 'ADMIN') {
-      if (!user.Admin) {
+    if (!userInfo.isActive) {
+      return res.status(403).json({
+        success: false,
+        error: "Account is inactive. Contact support.",
+      });
+    }
+
+    // ==============================
+    // CHECK ADMIN SUBSCRIPTION
+    // ==============================
+    if (userInfo.role === "ADMIN") {
+      if (!userInfo.Admin) {
         return res.status(403).json({
           success: false,
-          error: 'Admin profile not found'
-        })
+          error: "Admin profile not found",
+        });
       }
 
-      if (user.Admin.subsValidity && new Date() > user.Admin.subsValidity) {
+      if (
+        userInfo.Admin.subsValidity &&
+        new Date(userInfo.Admin.subsValidity) < new Date()
+      ) {
         return res.status(403).json({
           success: false,
-          error: 'Subscription expired. Please renew to continue.'
-        })
+          error: "Subscription expired. Please renew to continue.",
+        });
       }
     }
 
-    req.user = user
-    next()
+    req.user = userInfo;
+    next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Invalid token' 
-      })
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Token expired. Please login again.' 
-      })
-    }
-    console.error('Auth middleware error:', error)
-    res.status(401).json({ 
-      success: false, 
-      error: 'Authentication failed' 
-    })
-  }
-}
+    console.error("Auth middleware error:", error);
 
-module.exports = { protect }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid token",
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        error: "Token expired. Please login again.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: "Authentication failed",
+    });
+  }
+};
+
+module.exports = { protect };

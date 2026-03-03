@@ -3,13 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "postinstall": "npx prisma generate",
     "build": "npm install",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "prisma:migrate": "npx prisma migrate dev",
-    "prisma:generate": "npx prisma generate",
-    "prisma:studio": "npx prisma studio"
+    "dev": "nodemon src/server.js"
   },
   "keywords": [],
   "author": "",
