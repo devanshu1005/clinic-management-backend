@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs')
-const {User , Admin} = require('../../Models')
+const {User , Admin} = require('../../models')
 const { generatePassword } = require('../../utils/otpServices')
 
 // =============================================

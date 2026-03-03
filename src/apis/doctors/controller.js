@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs')
-const {User , Doctor} = require('../../Models')
+const {User , Doctor} = require('../../models')
 const { generatePassword } = require('../../utils/otpServices')
 
 // CREATE DOCTOR (ADMIN only)
