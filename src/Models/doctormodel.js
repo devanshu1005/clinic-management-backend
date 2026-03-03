@@ -32,9 +32,11 @@ const doctorSchema = new mongoose.Schema(
       trim: true
     },
 
-    experience: {
-      type: String
-    },
+  experience: {
+  type: Number,
+  min: 0,
+  max: 60
+},
 
     salary: {
       type: Number,
@@ -61,13 +63,14 @@ const doctorSchema = new mongoose.Schema(
       trim: true,
       index: true
     },
-
-    aadhaar: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true
-    },
+aadhaar: {
+  type: String,
+  required: true,
+  unique: true,
+  trim: true,
+  match: [/^[0-9]{12}$/, ],
+  index: true
+},
 
     address: {
       type: String,
@@ -83,9 +86,14 @@ const doctorSchema = new mongoose.Schema(
       type: String
     }],
 
-    documentUrl: [{
-      type: String
-    }]
+ documentUrl: [{
+  name: String,
+  url: String,
+  uploadedAt: {
+    type: Date,
+    default: Date.now
+  }
+}]
   },
   {
     timestamps: true,

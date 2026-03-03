@@ -30,4 +30,4 @@ const validate =
     next();
   };
 
-module.exports = validate;
+module.exports = {validate};

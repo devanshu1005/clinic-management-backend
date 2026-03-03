@@ -88,6 +88,6 @@ const adminSchema = new mongoose.Schema(
 
 // Additional indexes for performance
 adminSchema.index({ createdAt: 1 });
-adminSchema.index({ subsValidity: 1 });
+//adminSchema.index({ subsValidity: 1 });
 
 module.exports = mongoose.model("Admin", adminSchema);

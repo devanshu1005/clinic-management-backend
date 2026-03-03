@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Additional Indexes
-userSchema.index({ email: 1 });
+//userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 
 module.exports = mongoose.model("User", userSchema);

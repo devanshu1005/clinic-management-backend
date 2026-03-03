@@ -1,12 +1,12 @@
 const bcrypt = require('bcryptjs')
-const {User , Admin} = require('../models')
-const { generatePassword } = require('../utils/otpServices')
+const {User , Admin} = require('../../Models')
+const { generatePassword } = require('../../utils/otpServices')
 
 // =============================================
 // CREATE ADMIN
 // =============================================
 exports.createAdmin = async (req, res, next) => {
-  try {
+
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
@@ -64,17 +64,13 @@ exports.createAdmin = async (req, res, next) => {
       }
     })
 
-  } catch (error) {
-    next(error)
   }
-}
-
 
 // =============================================
 // GET CURRENT USER
 // =============================================
 exports.getMe = async (req, res, next) => {
-  try {
+ 
     const user = await User.findById(req.user.id)
       .select('name email phone role isActive lastLogin createdAt')
       .populate({
@@ -105,17 +101,13 @@ exports.getMe = async (req, res, next) => {
       }
     })
 
-  } catch (error) {
-    next(error)
-  }
-}
-
+  } ;
 
 // =============================================
 // GET ALL ADMINS
 // =============================================
 exports.getAllAdmins = async (req, res, next) => {
-  try {
+
     if (req.user.role !== "SUPER_ADMIN") {
       return res.status(403).json({
         success: false,
@@ -180,17 +172,14 @@ exports.getAllAdmins = async (req, res, next) => {
       data,
     })
 
-  } catch (error) {
-    next(error);
-  }
-};
+  };
 
 
 // =============================================
 // GET ADMIN BY ID
 // =============================================
 exports.getAdminById = async (req, res, next) => {
-  try {
+
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
@@ -227,17 +216,14 @@ exports.getAdminById = async (req, res, next) => {
       }
     });
 
-  } catch (error) {
-    next(error);
-  }
-};
+  };
 
 
 // =============================================
 // DISABLE ADMIN
 // =============================================
 exports.disableAdmin = async (req, res, next) => {
-  try {
+
     if (req.user.role !== "SUPER_ADMIN") {
       return res.status(403).json({
         success: false,
@@ -279,17 +265,14 @@ exports.disableAdmin = async (req, res, next) => {
       message: `Admin has been ${isActive ? "activated" : "deactivated"} successfully`,
     });
 
-  } catch (error) {
-    next(error);
-  }
-};
+  } ;
 
 
 // =============================================
 // UPDATE ADMIN PASSWORD
 // =============================================
 exports.updateAdminPassword = async (req, res, next) => {
-  try {
+
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
@@ -319,7 +302,4 @@ exports.updateAdminPassword = async (req, res, next) => {
       message: "Admin password updated successfully"
     })
 
-  } catch (error) {
-    next(error)
-  }
-}
+  } 
