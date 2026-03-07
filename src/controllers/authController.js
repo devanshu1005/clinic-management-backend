@@ -70,7 +70,7 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body
 
     // Find user by email
-    const user = await prisma.user.findUnique({ where: { email } })
+   const user = await User.findOne({ email })
     
     if (!user) {
       return res.status(401).json({ 
@@ -97,23 +97,37 @@ exports.login = async (req, res, next) => {
     }
 
     // Check subscription validity for ADMIN role
-   if (user.role === 'ADMIN' && user.subsValidity) {
-      if (new Date() > user.subsValidity) {
-        return res.status(403).json({ 
-          success: false, 
-          error: 'Subscription expired. Please renew.' 
-        })
-      }
-    }
+ if (user.role === "ADMIN") {
+  const adminProfile = await Admin.findOne({ user: user._id })
 
-    // Update last login
-   await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() }
+  if (!adminProfile) {
+    return res.status(403).json({
+      success: false,
+      error: "Admin profile not found"
     })
+  }
 
+  if (adminProfile.subsValidity && new Date() > adminProfile.subsValidity) {
+    return res.status(403).json({
+      success: false,
+      error: "Subscription expired. Please renew."
+    })
+  }
+}
+    // Update last login
+   await User.findByIdAndUpdate(user.id, {
+  lastLogin: new Date()
+})
     // Generate JWT token
-    const token = generateToken(user.id)
+       const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    )
   
 
     res.json({

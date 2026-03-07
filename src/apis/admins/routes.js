@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { createAdminSchema, UpdatePasswordschema, DisableAdminschema } = require("./validation");
+const { createAdminSchema, UpdatePasswordSchema, DisableAdminschema,loginSchema } = require("./validation");
 const { protect, authorize, validate } = require("../../middlewares");
-const { createAdmin , getMe,getAllAdmins,updateAdminInfo,updateAdminPassword,disableAdmin,getAdminById} = require("./controller")
+const { createAdmin , getMe,getAllAdmins,updateAdminInfo,updateAdminPassword,disableAdmin,getAdminById,adminLogin} = require("./controller")
 const responseHandler = require("../../utils/responseHandler");
 console.log("validate", validate,authorize);
 // =============================================
@@ -11,6 +11,13 @@ console.log("validate", validate,authorize);
 router.get("/me", 
   protect, 
   responseHandler(getMe));
+
+//login
+  router.post(
+    "/login",
+    validate(loginSchema),
+    responseHandler(adminLogin)
+  );
 
 // =============================================
 // SUPER ADMIN ROUTES
@@ -40,7 +47,7 @@ router.put(
   "/password/:adminId",
   protect,
   authorize("SUPER_ADMIN"),
-  validate(UpdatePasswordschema),
+  validate(UpdatePasswordSchema),
   responseHandler(updateAdminPassword),
 );
 

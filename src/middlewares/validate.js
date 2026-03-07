@@ -16,7 +16,7 @@ const validate =
         [schemaKey]: schemaKeyRule,
       });
     }
-
+console.log("Schema received:", schema);
     const { error } = schema.validate(obj, { abortEarly: false });
 
     if (error) {

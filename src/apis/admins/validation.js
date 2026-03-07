@@ -61,12 +61,27 @@ exports.createAdminSchema = Joi.object({
     .max(200)
     .required(),
 
-  subsValidity: Joi.date()
-    .greater("now")
-    .required()
-    .messages({
-      "date.greater": "Subscription validity must be a future date"
-    }),
+subsValidity: Joi.string()
+  .required()
+  .custom((value, helpers) => {
+    const inputDate = new Date(value);
+    const now = new Date();
+
+    if (isNaN(inputDate)) {
+      return helpers.error("any.invalid");
+    }
+
+    if (inputDate <= now) {
+      return helpers.error("date.future");
+    }
+
+    return value;
+  })
+  .messages({
+    "any.required": "Subscription expiry date is required.",
+    "any.invalid": "Please provide a valid subscription expiry date.",
+    "date.future": "Subscription expiry date must be in the future."
+  }),
 
   clinicLogo: Joi.string()
     .uri()
@@ -138,7 +153,43 @@ exports.createAdminSchema = Joi.object({
     .optional()
 
 })
-.strict(); // Prevent unknown fields
+.strict();
+
+exports.loginSchema = Joi.object({
+  email: Joi.string()
+    .email()
+    .required()
+    .messages({
+      "string.email": "Email must be valid",
+      "any.required": "Email is required"
+    }),
+
+  password: Joi.string()
+    .required()
+    .messages({
+      "any.required": "Password is required"
+    })
+});
+
+exports.UpdatePasswordSchema = Joi.object({
+  newPassword: Joi.string()
+    .min(6)
+    .max(100)
+    .required()
+    .messages({
+      "string.min": "Password must be at least 6 characters",
+      "any.required": "New password is required"
+    })
+});
+
+exports.DisableAdminschema = Joi.object({
+  isActive: Joi.boolean()
+    .required()
+    .messages({
+      "boolean.base": "isActive must be true or false",
+      "any.required": "isActive field is required"
+    })
+}).strict();// Prevent unknown fields
 
 // // CREATE ADMIN VALIDATION
 // exports.validateCreateAdmin = (req, res, next) => {
