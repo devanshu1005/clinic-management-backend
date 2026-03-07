@@ -5,6 +5,7 @@ const { generatePassword } = require("../../utils/otpServices");
 // =============================================
 // CREATE ADMIN
 // =============================================
+
 exports.createAdmin = async ({ body, user }) => {
   if (user.role !== "SUPER_ADMIN") {
     return {
@@ -14,9 +15,9 @@ exports.createAdmin = async ({ body, user }) => {
     };
   }
 
-  const { email, adminName, phone, clinicName, location } = body;
+  const { email, name, phone, clinicName, location } = body;
 
-  const existingUser = await User.findOne({ email }).select("_id").lean();
+  const existingUser = await User.findOne({ email }).select("id").lean();
   if (existingUser) {
     return {
       statusCode: 400,
@@ -34,7 +35,7 @@ exports.createAdmin = async ({ body, user }) => {
   const userDetails = await User.create({
     email,
     password: hashedPassword,
-    name: adminName,
+    name: name,
     phone,
     role: "ADMIN",
   });
@@ -45,19 +46,25 @@ exports.createAdmin = async ({ body, user }) => {
     location,
     subsValidity: subscriptionExpiry,
   });
+await User.findByIdAndUpdate(userDetails._id, {
+  admin: admin._id
+});
+console.log("Saved admin reference:", userDetails.admin);
+console.log("User created:", userDetails);
+console.log("Admin created:", admin);
 
   return {
     statusCode: 201,
     success: true,
     message: "Admin created successfully.",
     data: {
-      id: userDetails._id,
+      id: userDetails.id,
       name: userDetails.name,
       email: userDetails.email,
       phone: userDetails.phone,
       role: userDetails.role,
       clinic: {
-        id: admin._id,
+        id: admin.id,
         clinicName: admin.clinicName,
         location: admin.location,
         subsValidity: admin.subsValidity,
@@ -71,19 +78,38 @@ exports.createAdmin = async ({ body, user }) => {
 // GET CURRENT USER
 // =============================================
 exports.getMe = async ({ user }) => {
+   console.log("User received in controller:", user);
+   if (!user || !user.id) {
+    throw new Error("User information missing in request");
+  }
   const userDetails = await User.findById(user.id)
-    .select("name email phone role isActive lastLogin createdAt")
-    .populate({
-      path: "admin",
-      select: "clinicName location subsValidity createdAt",
-    })
-    .lean();
+  
+ // .select("name email phone role isActive lastLogin createdAt id")  
+
+    // .populate({
+    //   path: "admin",
+    //   select: "clinicName location subsValidity createdAt",
+    // })
+      if (!userDetails) {
+    throw new Error("User not found");
+  }
+
+  const admin = await Admin.findOne({ user: userDetails._id });
+  console.log("Admin found:", admin);
+  if (admin) {
+    userDetails.admin = {
+      id: admin.id,
+      clinicName: admin.clinicName,
+      location: admin.location,
+      subsValidity: admin.subsValidity,
+    };
+  }
 
   return {
     statusCode: 200,
     success: true,
     data: {
-      id: userDetails._id,
+      id: userDetails.id,
       name: userDetails.name,
       email: userDetails.email,
       phone: userDetails.phone,
@@ -93,7 +119,7 @@ exports.getMe = async ({ user }) => {
       createdAt: userDetails.createdAt,
       clinic: userDetails.admin
         ? {
-            id: userDetails.admin._id,
+            id: userDetails.admin.id,
             clinicName: userDetails.admin.clinicName,
             location: userDetails.admin.location,
             subsValidity: userDetails.admin.subsValidity,
@@ -143,7 +169,7 @@ exports.getAllAdmins = async ({ user, query }) => {
   const total = await Admin.countDocuments();
 
   const data = filtered.map((a) => ({
-    id: a.user._id,
+    id: a.user.id,
     name: a.user.name,
     email: a.user.email,
     phone: a.user.phone,
@@ -151,7 +177,7 @@ exports.getAllAdmins = async ({ user, query }) => {
     isActive: a.user.isActive,
     createdAt: a.createdAt,
     clinic: {
-      id: a._id,
+      id: a.id,
       clinicName: a.clinicName,
       location: a.location,
       subsValidity: a.subsValidity,
@@ -194,7 +220,7 @@ exports.getAdminById = async ({ user, params }) => {
     })
     .lean();
 
-  if (!user || user.role !== "ADMIN") {
+  if (!userDetails || userDetails.role !== "ADMIN") {
     return {
       statusCode: 404,
       success: false,
@@ -206,7 +232,7 @@ exports.getAdminById = async ({ user, params }) => {
     statusCode: 200,
     success: true,
     data: {
-      id: userDetails._id,
+      id: userDetails.id,
       name: userDetails.name,
       email: userDetails.email,
       phone: userDetails.phone,
@@ -230,7 +256,13 @@ exports.disableAdmin = async ({ user, params, body }) => {
       message: "Only Super Admin can update admin status",
     };
   }
-
+  if (!body) {
+    return {
+      statusCode: 400,
+      success: false,
+      message: "Request body is missing"
+    };
+  }
   const { adminId } = params;
   const { isActive } = body;
 
@@ -296,5 +328,115 @@ exports.updateAdminPassword = async ({ user, params, body }) => {
     statusCode: 200,
     success: true,
     message: "Admin password updated successfully",
+  };
+};
+
+
+//admin log in 
+const jwt = require("jsonwebtoken");
+
+exports.adminLogin = async ({ body }) => {
+  const { email, password } = body;
+
+  const user = await User.findOne({ email, role: "ADMIN" });
+
+  if (!user) {
+    throw new Error("Admin not found");
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    throw new Error("Invalid credentials");
+  }
+
+  const token = jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+      email: user.email
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return {
+    statusCode: 200,
+    success: true,
+    token
+  };
+};
+
+
+
+// UPDATE ADMIN INFO
+
+exports.updateAdminInfo = async ({ user, params, body }) => {
+  if (user.role !== "SUPER_ADMIN") {
+    return {
+      statusCode: 403,
+      success: false,
+      message: "Only Super Admin can update admin information",
+    };
+  }
+
+  const { adminId } = params;
+  const { adminName, subsValidity, isActive } = body;
+
+  const adminUser = await User.findById(adminId).select(
+    "name email phone role isActive admin"
+  );
+
+  if (!adminUser || adminUser.role !== "ADMIN") {
+    return {
+      statusCode: 404,
+      success: false,
+      message: "Admin not found",
+    };
+  }
+
+  // Update USER fields 
+  if (adminName) adminUser.name = adminName;
+  if (typeof isActive === "boolean") adminUser.isActive = isActive;
+
+  await adminUser.save();
+
+  // Update ADMIN profile 
+  if (subsValidity && adminUser.admin) {
+    await Admin.findByIdAndUpdate(adminUser.admin, {
+      subsValidity: new Date(subsValidity),
+    });
+  }
+
+  // Fetch updated data with populate 
+  const updatedUser = await User.findById(adminId)
+    .select("name email phone role isActive updatedAt")
+    // .populate({
+    //   path: "admin",
+    //   select: "clinicName location subsValidity",
+    // })
+    .lean();
+
+  return {
+    statusCode: 200,
+    success: true,
+    message: "Admin info updated successfully",
+    data: {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      isActive: updatedUser.isActive,
+      updatedAt: updatedUser.updatedAt,
+      clinic: updatedUser.admin
+        ? {
+            id: updatedUser.admin.id,
+            clinicName: updatedUser.admin.clinicName,
+            location: updatedUser.admin.location,
+            subsValidity: updatedUser.admin.subsValidity,
+          }
+        : null,
+    },
   };
 };

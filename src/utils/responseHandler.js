@@ -3,12 +3,13 @@ const mongoose = require("mongoose");
 
 module.exports = (controllerFunction) => async (req, res, next) => {
   try {
-    const sessionStart = await  mongoose.startSession();
-    const { statusCode = 200, ...resObj } = await controllerFunction(
-      req,
-      res,
-      next,
-    );  
+    //const sessionStart = await  mongoose.startSession();
+const { statusCode = 200, ...resObj } = await controllerFunction({
+  user: req.user,
+  body: req.body || {},
+  params: req.params || {},
+  query: req.query || {}
+});
 
     // Capitalize message if present
     if (resObj?.message) {

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const { user: User } = require("../models");
+const { User , Admin} = require("../models");
 
 const protect = async (req, res, next) => {
   try {
@@ -55,11 +55,11 @@ const protect = async (req, res, next) => {
     // ==============================
     const userInfo = await User.findById(decoded.id)
       .select("email name role isActive Admin")
-      .populate({
-        path: "Admin",
-        select: "clinicName location subsValidity",
-      });
-
+      // .populate({
+      //   path: "admin",
+      //   select: "clinicName location subsValidity",
+      // });
+console.log( userInfo)
     if (!userInfo) {
       return res.status(401).json({
         success: false,
@@ -78,7 +78,15 @@ const protect = async (req, res, next) => {
     // CHECK ADMIN SUBSCRIPTION
     // ==============================
     if (userInfo.role === "ADMIN") {
-      if (!userInfo.Admin) {
+      // if (!userInfo.Admin) {
+      //   return res.status(403).json({
+      //     success: false,
+      //     error: "Admin profile not found",
+      //   });
+      // }
+   
+      const admin = await Admin.findOne({ user: userInfo._id });
+      if (!admin) {
         return res.status(403).json({
           success: false,
           error: "Admin profile not found",
@@ -86,8 +94,8 @@ const protect = async (req, res, next) => {
       }
 
       if (
-        userInfo.Admin.subsValidity &&
-        new Date(userInfo.Admin.subsValidity) < new Date()
+        admin.subsValidity &&
+        new Date(admin.subsValidity) < new Date()
       ) {
         return res.status(403).json({
           success: false,

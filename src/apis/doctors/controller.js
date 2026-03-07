@@ -57,7 +57,7 @@ exports.createDoctor = async ({ user, body }) => {
   // Create doctor
   const doctor = await Doctor.create({
     user: userDetails._id,
-    Admin: user.id,
+    admin: user._id,
     qualification,
     registrationNo,
     salary: Number(salary),
@@ -103,7 +103,7 @@ exports.getDoctorProfile = async ({ user, params }) => {
     };
 
   // Doctor can view their own profile
-  if (user.role === "DOCTOR" && user.id !== doctor.user._id) {
+  if (user.role === "DOCTOR" && user.id !== doctor.user.id) {
     return {
       statusCode: 403,
       success: false,
@@ -111,13 +111,15 @@ exports.getDoctorProfile = async ({ user, params }) => {
     };
   }
 
-  return {
+ return {
     statusCode: 200,
     success: true,
-    data: doctor,
+    data: {
+      ...doctor,
+      isActive: doctor.user.isActive
+    },
   };
 };
-
 //get all doctors(with pagination)
 exports.getAllDoctors = async ({ user, query }) => {
   const allowedRoles = ["ADMIN", "RECEPTIONIST", "PATIENT"];
@@ -130,7 +132,7 @@ exports.getAllDoctors = async ({ user, query }) => {
     };
   }
 
-  const status = query.status ?? "active";
+  const status = query.status 
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(50, Number(query.limit) || 10); // cap limit
 
@@ -139,7 +141,7 @@ exports.getAllDoctors = async ({ user, query }) => {
   else if (status === "inactive") userFilter.isActive = false;
 
   const filter = {
-    Admin: user.role === "ADMIN" ? user.id : undefined,
+    admin: user.role === "ADMIN" ? user._id : undefined,
   };
 
   const [total, doctors] = await Promise.all([
@@ -188,10 +190,12 @@ exports.updateDoctor = async ({ user, params, body }) => {
       success: false,
       message: "Doctor not found",
     };
+  
+
 
   const isAdmin = user.role === "ADMIN";
-  const isSelf =
-    user.role === "DOCTOR" && user.id === doctor.user._id.toString();
+  const isSelf = user.role === "DOCTOR" 
+  //user._id.toString() === doctor.user._id.toString();
 
   if (!isAdmin && !isSelf) {
     return {
@@ -217,7 +221,7 @@ exports.updateDoctor = async ({ user, params, body }) => {
     availabilityDays,
     documentUrl,
   } = body;
-
+ 
   // Doctor can edit limited fields
   if (isSelf) {
     await Doctor.findByIdAndUpdate(
@@ -268,7 +272,7 @@ exports.updateDoctor = async ({ user, params, body }) => {
     },
     { new: true, runValidators: true },
   );
-
+  
   await User.findByIdAndUpdate(
     doctor.user._id,
     {
@@ -312,7 +316,7 @@ exports.adminUpdateDoctorPassword = async ({ user, params, body }) => {
 
   const hashed = await bcrypt.hash(newPassword, 12);
 
-  await User.findByIdAndUpdate(doctor.user._id, { password: hashed });
+  await User.findByIdAndUpdate(doctor.user.id, { password: hashed });
 
   return {
     statusCode: 200,
@@ -345,13 +349,173 @@ exports.disableDoctor = async ({ user, params, body }) => {
       message: "Doctor not found",
     };
   }
+    await User.findByIdAndUpdate(
+    doctor.user._id,
+    { isActive },
+    { new: true, runValidators: true }
+  );
 
-  await User.findByIdAndUpdate(doctor.user._id, { isActive });
+
+
+  await User.findByIdAndUpdate(doctor.user.id, { isActive });
 
   return {
     statusCode: 200,
     success: true,
     code: "DOCTOR_STATUS_UPDATED",
     message: `Doctor has been ${isActive ? "activated" : "deactivated"} successfully`,
+  };
+};
+
+//doctor log in
+const jwt = require("jsonwebtoken");
+
+exports.doctorLogin = async ({ body }) => {
+  const { email, password } = body;
+
+  const user = await User.findOne({ email, role: "DOCTOR" });
+
+  if (!user) {
+    throw new Error("Doctor not found");
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    throw new Error("Invalid credentials");
+  }
+
+  const token = jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+      email: user.email
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return {
+    statusCode: 200,
+    success: true,
+    token
+  };
+};
+
+//get isactive doctor
+
+exports.getisActiveDoctors = async ({ user, query }) => {
+  const allowedRoles = ["ADMIN", "RECEPTIONIST", "PATIENT"];
+  if (!allowedRoles.includes(user.role)) {
+    return {
+      statusCode: 403,
+      success: false,
+      code: "FORBIDDEN",
+      message: "You are not allowed to view doctors",
+    };
+  }
+
+  const status = query.status 
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(50, Number(query.limit) || 10); // cap limit
+
+  let userFilter = {};
+  if (status === "active") userFilter.isActive = true;
+  //else if (status === "inactive") userFilter.isActive = false;
+
+  const filter = {
+    admin: user.role === "ADMIN" ? user._id : undefined,
+  };
+
+  const [total, doctors] = await Promise.all([
+    Doctor.countDocuments(filter),
+
+    Doctor.find(filter)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select(
+        "qualification experience department shift consultationFee availabilityDays",
+      )
+      .populate({
+        path: "user",
+        match: {isActive:true},
+        select: "name email phone isActive",
+      })
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
+
+  const filteredDoctors = doctors.filter((d) => d.user);
+  return {
+    statusCode: 200,
+    success: true,
+    code: "Active DOCTORS_FETCHED",
+    message: " Active Doctors fetched successfully",
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    data: filteredDoctors,
+  };
+};
+
+//get inactive doctor
+
+exports.getinActiveDoctors = async ({ user, query }) => {
+  const allowedRoles = ["ADMIN", "RECEPTIONIST", "PATIENT"];
+  if (!allowedRoles.includes(user.role)) {
+    return {
+      statusCode: 403,
+      success: false,
+      code: "FORBIDDEN",
+      message: "You are not allowed to view doctors",
+    };
+  }
+
+  const status = query.status 
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(50, Number(query.limit) || 10); // cap limit
+
+  let userFilter = {};
+  if (status === "active") userFilter.isActive = False;
+  //else if (status === "inactive") userFilter.isActive = false;
+
+  const filter = {
+    admin: user.role === "ADMIN" ? user._id : undefined,
+  };
+
+  const [total, doctors] = await Promise.all([
+    Doctor.countDocuments(filter),
+
+    Doctor.find(filter)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select(
+        "qualification experience department shift consultationFee availabilityDays",
+      )
+      .populate({
+        path: "user",
+        match: {isActive:false},
+        select: "name email phone isActive",
+      })
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
+
+  const filteredDoctors = doctors.filter((d) => d.user);
+  return {
+    statusCode: 200,
+    success: true,
+    code: "inActive DOCTORS_FETCHED",
+    message: " inActive Doctors fetched successfully",
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    data: filteredDoctors,
   };
 };

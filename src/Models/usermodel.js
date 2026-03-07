@@ -64,7 +64,27 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
-  },
+ 
+//   admin: {
+//   type: mongoose.Schema.Types.ObjectId,
+//   ref: "Admin",
+// },
+
+// doctor: {
+//   type: mongoose.Schema.Types.ObjectId,
+//   ref: "Doctor",
+// },
+
+// receptionist: {
+//   type: mongoose.Schema.Types.ObjectId,
+//   ref: "Receptionist",
+// },
+
+// staff: {
+//   type: mongoose.Schema.Types.ObjectId,
+//   ref: "Staff",
+// },
+ },
   {
     timestamps: true, // automatically adds createdAt & updatedAt
     collection: "users",
