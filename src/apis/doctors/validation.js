@@ -2,15 +2,30 @@
 const Joi = require("joi");
 
  exports.commonFields = {
-  name: Joi.string().trim().min(2).max(100),
+  name: Joi.string()
+  .trim()
+  .min(2)
+  .max(100)
+  .required(),
 
-  email: Joi.string().email(),
+  email: Joi.string()
+  .email()
+  .required(),
 
   phone: Joi.string()
     .pattern(/^[0-9]{10}$/)
+    .required()
     .messages({
       "string.pattern.base": "Phone number must be 10 digits"
-    })
+    }),
+     password: Joi.string()
+        .min(6)
+        .max(100)
+        .required()
+        .messages({
+          "string.min": "Password must be at least 6 characters",
+          "any.required": "Password is required"
+        })
 };
 
 
@@ -157,6 +172,8 @@ exports.updateDoctorSchema = Joi.object({   ...exports.commonFields,
 
   aadhaar: Joi.string()
     .pattern(/^[0-9]{12}$/)
+    .required()
+    
     .messages({
       "string.pattern.base": "Aadhaar must be 12 digits"
     }),

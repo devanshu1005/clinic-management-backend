@@ -17,6 +17,7 @@ exports.createDoctor = async ({ user, body }) => {
     name,
     email,
     phone,
+    password,
     qualification,
     registrationNo,
     salary,
@@ -52,6 +53,9 @@ exports.createDoctor = async ({ user, body }) => {
     name,
     phone,
     role: "DOCTOR",
+      isActive:true,
+        lastLogin:new Date(),
+        createdAt:new Date()
   });
 
   // Create doctor
@@ -224,6 +228,21 @@ exports.updateDoctor = async ({ user, params, body }) => {
  
   // Doctor can edit limited fields
   if (isSelf) {
+          // allowed fields for receptionist
+    const allowedFields = ["experience", "address","documentUrl", "name", "phone"];
+
+    // check if body contains forbidden fields
+    const invalidField = Object.keys(body).find(
+      (key) => !allowedFields.includes(key)
+    );
+
+    if (invalidField) {
+      return {
+        statusCode: 403,
+        success: false,
+        message: `You are not authorised to update ${invalidField}. Only admin can update this field`,
+      };
+    }
     await Doctor.findByIdAndUpdate(
       doctorId,
       {
@@ -256,7 +275,7 @@ exports.updateDoctor = async ({ user, params, body }) => {
   // Admin can edit everything
   await Doctor.findByIdAndUpdate(
     doctorId,
-    {
+    {email,
       qualification,
       registrationNo,
       salary,
@@ -316,7 +335,7 @@ exports.adminUpdateDoctorPassword = async ({ user, params, body }) => {
 
   const hashed = await bcrypt.hash(newPassword, 12);
 
-  await User.findByIdAndUpdate(doctor.user.id, { password: hashed });
+  await User.findByIdAndUpdate(doctor.user._id, { password: hashed });
 
   return {
     statusCode: 200,
@@ -363,7 +382,7 @@ exports.disableDoctor = async ({ user, params, body }) => {
     statusCode: 200,
     success: true,
     code: "DOCTOR_STATUS_UPDATED",
-    message: `Doctor has been ${isActive ? "activated" : "deactivated"} successfully`,
+    message: `Doctor has been ${isActive ? "activated" : "inactive"} successfully`,
   };
 };
 
