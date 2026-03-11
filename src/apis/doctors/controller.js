@@ -33,14 +33,33 @@ exports.createDoctor = async ({ user, body }) => {
   } = body;
 
   // Check email exists
-  const existing = await User.findOne({ email });
-  if (existing) {
-    return {
-      statusCode: 400,
-      success: false,
-      message: "Email already registered",
-    };
-  }
+    // Check email exists
+    const Emailexist = await User.findOne({ email });
+    if (Emailexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Email already registered",
+        };
+    }
+
+        const Aadhaarexist = await User.findOne({ aadhaar });
+    if (Aadhaarexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Aadhar already registered",
+        };
+    }
+
+        const Phoneexist = await User.findOne({ phone });
+    if (Phoneexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Phone already registered",
+        };
+    }
 
   // Generate password
   const rawPassword = generatePassword();

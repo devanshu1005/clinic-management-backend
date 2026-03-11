@@ -31,14 +31,32 @@ exports.createReceptionist = async ({ user, body }) => {
     
     //check email existing
 
-    const existing = await User.findOne({email})
-    if(existing){
-        return{
-            statusCode:400,
-            success:false,
-            message:"Email already registered"
-        }
-        
+    // Check email exists
+    const Emailexist = await User.findOne({ email });
+    if (Emailexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Email already registered",
+        };
+    }
+
+        const Aadhaarexist = await User.findOne({ aadhaar });
+    if (Aadhaarexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Aadhar already registered",
+        };
+    }
+
+        const Phoneexist = await User.findOne({ phone });
+    if (Phoneexist) {
+        return {
+            statusCode: 400,
+            success: false,
+            message: "Phone already registered",
+        };
     }
 
     //Generate Password
@@ -55,7 +73,8 @@ exports.createReceptionist = async ({ user, body }) => {
         role:"RECEPTIONIST",
         isActive:true,
         lastLogin:new Date(),
-        createdAt:new Date()
+        createdAt:new Date(),
+        updatedAt:new Date()
     })
 
     //create receptionist 
@@ -547,3 +566,4 @@ const updated = await Receptionist.findById(receptionistId).populate("user").lea
     data: updated,
   };
 };
+
