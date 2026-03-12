@@ -31,7 +31,7 @@ const adminSchema = new mongoose.Schema(
       index: true
     },
 
-    // Optional Clinic Details
+
     clinicLogo: {
       type: String
     },

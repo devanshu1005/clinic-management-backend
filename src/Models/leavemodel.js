@@ -20,7 +20,7 @@ const leaveSchema = new mongoose.Schema(
 
     userRole: {
       type: String,
-      enum: ["SUPER_ADMIN", "ADMIN", "DOCTOR", "RECEPTIONIST", "STAFF", "PATIENT"],
+      enum: ["SUPER_ADMIN", "ADMIN", "DOCTOR", "RECEPTIONIST", "STAFF"],
       required: true,
       index: true
     },
