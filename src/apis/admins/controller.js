@@ -290,7 +290,7 @@ exports.disableAdmin = async ({ user, params, body }) => {
   return {
     statusCode: 200,
     success: true,
-    message: `Admin has been ${isActive ? "activated" : "deactivated"} successfully`,
+    message: `Admin has been ${isActive ? "activated" : "inactivated"} successfully`,
   };
 };  
 
