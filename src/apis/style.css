@@ -1,0 +1,106 @@
+body{
+font-family: Arial, sans-serif;
+background:#ffffff;
+padding:30px;
+}
+
+.payslip{
+width:800px;
+margin:auto;
+background:white;
+padding:30px;
+border:2px solid #ddd;
+}
+
+.header{
+display:flex;
+align-items:center;
+background:rgb(46, 72, 146);
+color:white;
+padding:20px;
+margin-bottom:20px;
+}
+
+.docplus_logo img{
+width:70px;
+height:70px;
+object-fit:contain;
+margin-right:20px;
+}
+
+.hospital-name h1{
+margin:0;
+font-size:24px;
+}
+
+.hospital-name p{
+margin:5px 0 0 0;
+font-size:16px;
+}
+
+.information{
+display:flex;
+justify-content:space-between;
+background:rgb(245, 244, 244);
+padding:15px;
+border:1px solid rgb(136, 134, 134);
+margin-bottom:20px;
+}
+
+.info-col p{
+margin:6px 0;
+}
+
+.salary-section{
+display:flex;
+justify-content:space-between;
+margin-bottom:20px;
+}
+.card{
+width:48%;
+border:1px solid rgb(206, 206, 206);
+border-radius:6px;
+}
+
+.card-header{
+background:rgb(238, 231, 231);
+padding:10px;
+font-weight:bold;
+text-align:center;
+border-bottom:1px solid #ddd;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+padding:8px 12px;
+}
+
+.total{
+border-top:1px solid rgb(240, 240, 240);
+font-weight:bold;
+}
+
+.netpay{
+display:flex;
+justify-content:space-between;
+background:#e8f5e9;
+border:2px solid rgb(59, 167, 59);
+padding:18px;
+font-size:20px;
+font-weight:bold;
+margin-bottom:20px;
+}
+
+.amount-in-words{
+background:rgb(236, 236, 236);
+border-left:4px solid rgb(46, 72, 146);;
+padding:12px;
+margin-bottom:20px;
+}
+
+footer{
+text-align:center;
+font-size:12px;
+color:black;
+}
