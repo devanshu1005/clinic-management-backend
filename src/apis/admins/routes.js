@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { createAdminSchema, UpdatePasswordSchema, DisableAdminschema,loginSchema } = require("./validation");
 const { protect, authorize, validate } = require("../../middlewares");
-const { createAdmin , getMe,getAllAdmins,updateAdminInfo,updateAdminPassword,disableAdmin,getAdminById,adminLogin} = require("./controller")
+const { createAdmin , getMe,getAllAdmins,updateAdminInfo,updateAdminPassword,disableAdmin,getAdminById,adminLogin} = require("./controller");
 const responseHandler = require("../../utils/responseHandler");
 console.log("validate", validate,authorize);
 // =============================================

@@ -32,7 +32,7 @@ router.post(
 
 router.post(
     "/login",
-    protect,
+    
     validate(loginreceptionistSchema),
     responseHandler(receptionistLogin)
 )
