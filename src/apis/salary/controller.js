@@ -213,7 +213,7 @@ exports.getEmployeeSalaryDetails = async ({ query }) => {
 };
 
 
-// GET SALARY HISTORY (BONUS / PENALTY / REVISION)
+// Payslip download
 
 exports.downloadPayslip = async (req, res) => {
 

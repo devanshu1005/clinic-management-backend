@@ -214,10 +214,10 @@ exports.getAdminById = async ({ user, params }) => {
 
   const userDetails = await User.findById(params.id)
     .select("name email phone role isActive createdAt")
-    .populate({
-      path: "admin",
-      select: "clinicName location subsValidity",
-    })
+    // .populate({
+    //   path: "adminId",
+    //   select: "clinicName location subsValidity",
+    // })
     .lean();
 
   if (!userDetails || userDetails.role !== "ADMIN") {
@@ -232,14 +232,14 @@ exports.getAdminById = async ({ user, params }) => {
     statusCode: 200,
     success: true,
     data: {
-      id: userDetails.id,
+      id: userDetails._id,
       name: userDetails.name,
       email: userDetails.email,
       phone: userDetails.phone,
       role: userDetails.role,
       isActive: userDetails.isActive,
       createdAt: userDetails.createdAt,
-      clinic: userDetails.admin,
+      clinic: userDetails.adminId,
     },
   };
 };

@@ -2,12 +2,14 @@ const express = require("express");
 const router = express.Router();
 //const {  } = require("./validation");
 const { protect, authorize, validate } = require("../../middlewares");
-const { getAdminDashboard,getDoctorDashboard,getReceptionistDashboard,getStaffDashboard,getSuperAdminDashboard} = require("./controller");
+const{getSalaryDashboardListSchema,getSalaryDashboardSummarySchema}=require("./validation");
+const { getAdminDashboard,getDoctorDashboard,getReceptionistDashboard,getStaffDashboard,getSuperAdminDashboard,getSalaryDashboardList,getSalaryDashboardSummary} = require("./controller");
 const responseHandler = require("../../utils/responseHandler");
 
 router.get(
-    "superadmin-dashboard",
+    "/superadmin-dashboard",
     protect,
+    authorize("SUPER_ADMIN"),
 
     responseHandler(getSuperAdminDashboard)
 )
@@ -38,5 +40,23 @@ router.get(
     protect,
     authorize("STAFF"),
     responseHandler(getStaffDashboard)
+)
+
+router.get(
+    "/salarydashboardlist",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    validate(getSalaryDashboardListSchema,
+        "query"
+    ),
+    responseHandler(getSalaryDashboardList)
+)
+
+router.get(
+    "/salarysummery",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    validate(getSalaryDashboardSummarySchema,"query"),
+    responseHandler(getSalaryDashboardSummary)
 )
 module.exports=router;

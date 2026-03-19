@@ -133,7 +133,7 @@ exports.createDoctorSchema = Joi.object({
 
 
 
-exports.updateDoctorSchema = Joi.object({   ...exports.commonFields,
+exports.updateDoctorSchema = Joi.object({  
 
   // name: Joi.string()
   //   .trim()
@@ -172,7 +172,7 @@ exports.updateDoctorSchema = Joi.object({   ...exports.commonFields,
 
   aadhaar: Joi.string()
     .pattern(/^[0-9]{12}$/)
-    .required()
+    .optional()
     
     .messages({
       "string.pattern.base": "Aadhaar must be 12 digits"
