@@ -517,6 +517,439 @@ leaves.forEach(leave => {
     }
 
 
+//GET SALARY OF ALL EMPLOYEE RECEPTIONIST, STAFF , DOCTOR ONLY ADMIN CAN ACCESS
+
+exports.getSalaryDashboardList = async ({ user, query }) => {
+
+  if (user.role !== "ADMIN") {
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access salary dashboard",
+    };
+  }
+
+  const {
+    userRole,
+    month,
+    year,
+    page = 1,
+    limit = 10,
+  } = query;
+
+  const skip = (Number(page) - 1) * Number(limit);
+  let employees = [];
+  let totalCount = 0;
+
+  //  STAFF 
+  if (userRole === "STAFF") {
+    totalCount = await Staff.countDocuments({ admin: user._id });
+
+    const staff = await Staff.find({ admin: user._id })
+      .skip(skip)
+      .limit(Number(limit))
+      .populate("user", "name isActive");
+
+    employees = staff.map(s => ({
+      userId: s.userId,
+      name: s.user?.name,
+      role: "STAFF",
+      baseSalary: s.salary,
+      isActive: s.user?.isActive,
+    }));
+  }
+
+  //  RECEPTIONIST 
+  if (userRole === "RECEPTIONIST") {
+    totalCount = await Receptionist.countDocuments({ admin: user._id });
+
+    const receptionists = await Receptionist.find({ admin: user._id })
+      .skip(skip)
+      .limit(Number(limit))
+      .populate("user", "name isActive");
+
+    employees = receptionists.map(r => ({
+      userId: r.userId,
+      name: r.user?.name,
+      role: "RECEPTIONIST",
+      baseSalary: r.salary,
+      isActive: r.user?.isActive,
+    }));
+  }
+
+  //  DOCTOR 
+  if (userRole === "DOCTOR") {
+    totalCount = await Doctor.countDocuments({ admin: user._id });
+
+    const doctors = await Doctor.find({ admin: user._id })
+      .skip(skip)
+      .limit(Number(limit))
+      .populate("user", "name isActive");
+
+    employees = doctors.map(d => ({
+      userId: d.userId,
+      name: d.user?.name,
+      role: "DOCTOR",
+      baseSalary: d.salary,
+      isActive: d.user?.isActive,
+    }));
+  }
+
+  //  ALL 
+  if (userRole === "ALL") {
+    const [staffCount, receptionistCount, doctorCount] = await Promise.all([
+      Staff.countDocuments({ admin: user._id }),
+      Receptionist.countDocuments({ admin: user._id }),
+      Doctor.countDocuments({ admin: user._id }),
+    ]);
+
+    totalCount = staffCount + receptionistCount + doctorCount;
+
+    const [staff, receptionists, doctors] = await Promise.all([
+      Staff.find({ admin: user._id })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate("user", "name isActive"),
+
+      Receptionist.find({ admin: user._id })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate("user", "name isActive"),
+
+      Doctor.find({ admin: user._id })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate("user", "name isActive"),
+    ]);
+
+    employees = [
+      ...staff.map(s => ({
+        userId: s.userId,
+        name: s.user?.name,
+        role: "STAFF",
+        baseSalary: s.salary,
+        isActive: s.user?.isActive,
+      })),
+      ...receptionists.map(r => ({
+        userId: r.userId,
+        name: r.user?.name,
+        role: "RECEPTIONIST",
+        baseSalary: r.salary,
+        isActive: r.user?.isActive,
+      })),
+      ...doctors.map(d => ({
+        userId: d.userId,
+        name: d.user?.name,
+        role: "DOCTOR",
+        baseSalary: d.salary,
+        isActive: d.user?.isActive,
+      })),
+    ];
+  }
+
+  //  SALARY ADJUSTMENTS 
+  const data = await Promise.all(
+    employees.map(async emp => {
+
+      const adjustments = await Salary.find({
+        admin: user._id, 
+        user: emp.userId,
+        userRole: emp.role,
+        ...(month && { month: Number(month) }),
+        ...(year && { year: Number(year) }),
+      });
+
+      let bonus = 0;
+      let penalty = 0;
+
+      adjustments.forEach(a => {
+        if (a.type === "BONUS") bonus += a.amount;
+        if (a.type === "PENALTY") penalty += a.amount;
+      });
+
+      return {
+        ...emp,
+        bonus,
+        penalty,
+        adjustments,
+        netSalary: emp.baseSalary + bonus - penalty,
+      };
+    })
+  );
+
+  return {
+    statusCode: 200,
+    success: true,
+    data,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / Number(limit)),
+    },
+  };
+};
+
+
+// according to this API how much money is the clinic spending on salaries this month
+exports.getSalaryDashboardSummary = async ({ user, query }) => {
+
+  if (user.role !== "ADMIN") {
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access salary dashboard",
+    };
+  }
+
+  const { userRole, month, year } = query;
+
+  let salaryFilter = {
+    admin: user._id,
+    userRole,
+  };
+
+  if (year) salaryFilter.year = Number(year);
+  if (month) salaryFilter.month = Number(month);
+
+  const salaryRecords = await Salary.find(salaryFilter);
+
+  let totalBonus = 0;
+  let totalPenalty = 0;
+
+  salaryRecords.forEach(s => {
+    if (s.type === "BONUS") totalBonus += s.amount;
+    if (s.type === "PENALTY") totalPenalty += s.amount;
+  });
+
+  //  BASE SALARY 
+  let baseSalaries = [];
+
+  if (userRole === "STAFF") {
+    baseSalaries = await Staff.find(
+      { admin: user._id },
+      { salary: 1 }
+    );
+  }
+
+  if (userRole === "RECEPTIONIST") {
+    baseSalaries = await Receptionist.find(
+      { admin: user._id },
+      { salary: 1 }
+    );
+  }
+
+  if (userRole === "DOCTOR") {
+    baseSalaries = await Doctor.find(
+      { admin: user._id },
+      { salary: 1 }
+    );
+  }
+
+  const totalBaseSalary = baseSalaries.reduce(
+    (sum, s) => sum + s.salary,
+    0
+  );
+
+  const employeeCount = baseSalaries.length;
+
+  
+  let totalSalary = 0;
+  let averageSalary = 0;
+
+  // MONTHLY
+  if (month && year) {
+    totalSalary = totalBaseSalary + totalBonus - totalPenalty;
+
+    averageSalary =
+      employeeCount > 0
+        ? Math.round(totalSalary / employeeCount)
+        : 0;
+  }
+
+  // YEARLY
+  else if (year && !month) {
+    const yearlyBase = totalBaseSalary * 12;
+
+    totalSalary = yearlyBase + totalBonus - totalPenalty;
+
+    averageSalary =
+      employeeCount > 0
+        ? Math.round(totalSalary / employeeCount)
+        : 0;
+  }
+
+
+  else {
+    totalSalary = totalBaseSalary + totalBonus - totalPenalty;
+
+    averageSalary =
+      employeeCount > 0
+        ? Math.round(totalSalary / employeeCount)
+        : 0;
+  }
+
+  return {
+    statusCode: 200,
+    success: true,
+    data: {
+      totalSalary,
+      averageSalary,
+      totalBonus,
+      totalPenalty,
+      pendingAdjustment: totalBonus - totalPenalty,
+      type: month ? "MONTHLY" : year ? "YEARLY" : "ALL",
+    },
+  };
+};
+
+//LEAVE SUMMERY
+
+exports.getLeaveDashboardSummary = async ({ user }) => {
+
+  if (user.role !== "ADMIN") {
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access leave dashboard",
+    };
+  }
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const next7Days = new Date();
+  next7Days.setDate(todayStart.getDate() + 7);
+
+  const[
+    totalLeaves,
+    pendingLeaves,
+    approvedToday,
+    onLeaveToday,
+    upcomingLeaves
+  ]= await Promise.all([
+   Leave.countDocuments(),
+   Leave.countDocuments({status:"PENDING"}),
+
+   Leave.countDocuments({status:"APPROVED",fromDate:{$gte:todayStart,$lte:todayEnd}}),
+
+   Leave.countDocuments({status:"ON_LEAVE",fromDate:{$gte:todayStart,$lte:todayEnd}}),
+
+   Leave.countDocuments({status:"APPROVED",fromDate:{$gte:next7Days}})
+  ])
+
+ return({
+    statusCode: 200,
+    success: true,
+    data: {
+      totalLeaves,
+      pendingLeaves,
+      approvedToday,
+      onLeaveToday,
+      upcomingLeaves
+    },
+  });
+}
+
+//EMPLOYEES ON LEAVE TODAY
+
+exports.getEmployeesOnLeaveToday = async ({ user }) => {
+
+  if(user.role!=="ADMIN"){
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access this data",
+    };
+  }
+
+  const today = new Date();
+
+  const leaves = await Leave.find({status:"APPROVED",fromDate:{$lte:today},toDate:{$gte:today}})
+
+  .sort({fromDate:-1})
+
+   if (!leaves || leaves.length === 0) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: "No employees are on leave today",
+      data: Leave,
+    };
+  }
+
+  return {
+    statusCode: 200,
+    success: true,
+    data: Leave,
+  };
+}
+
+//UPCOMING LEAVES (NEXT 7 DAYS)
+
+exports.getUpcomingLeaves = async ({ user }) => {
+
+  if(user.role!=="ADMIN"){
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access upcoming leaves",
+    }
 
 
 
+  }
+    const today = new Date();
+    const next7Days = new Date();
+    next7Days.setDate(today.getDate()+7);
+
+    const leaves = await Leave.find({status:"APPROVED",fromDate:{$gte:today,$lte:next7Days}})
+
+    .sort({fromDate:-1})
+       if (!leaves || leaves.length === 0) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: "No upcoming leave",
+      data: Leave,
+    };
+  }
+
+    return {
+      statusCode: 200,
+      success: true,
+      data: Leave,
+    };
+  
+  
+  
+  }
+
+
+  //PENDING LEAVES
+
+  exports.getPendingLeavesDashboard = async ({ user }) => {
+
+    if(user.role!=="ADMIN"){
+      return {
+        statusCode: 403,
+        success: false,
+        error: "Only Admin can access pending leaves",
+      }
+    }
+
+    const leaves = await Leave.find({status:"PENDING"})
+
+    .sort({createdAt:-1})
+
+
+
+    return {
+      statusCode: 200,
+      success: true,
+      data: leaves,
+    };
+  }

@@ -10,6 +10,7 @@ console.log("validate", validate,authorize);
 // =============================================
 router.get("/me", 
   protect, 
+  authorize("ADMIN", "SUPER_ADMIN"),
   responseHandler(getMe));
 
 //login
@@ -59,9 +60,10 @@ router.put(
   responseHandler(disableAdmin),
 );
 
-// ⚠️ KEEP THIS LAST
+
 router.get("/:id", 
   protect, 
+  authorize("SUPER_ADMIN"),
   responseHandler(getAdminById));
 
 module.exports = router;
