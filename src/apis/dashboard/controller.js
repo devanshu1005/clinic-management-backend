@@ -802,3 +802,154 @@ exports.getSalaryDashboardSummary = async ({ user, query }) => {
     },
   };
 };
+
+//LEAVE SUMMERY
+
+exports.getLeaveDashboardSummary = async ({ user }) => {
+
+  if (user.role !== "ADMIN") {
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access leave dashboard",
+    };
+  }
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const next7Days = new Date();
+  next7Days.setDate(todayStart.getDate() + 7);
+
+  const[
+    totalLeaves,
+    pendingLeaves,
+    approvedToday,
+    onLeaveToday,
+    upcomingLeaves
+  ]= await Promise.all([
+   Leave.countDocuments(),
+   Leave.countDocuments({status:"PENDING"}),
+
+   Leave.countDocuments({status:"APPROVED",fromDate:{$gte:todayStart,$lte:todayEnd}}),
+
+   Leave.countDocuments({status:"ON_LEAVE",fromDate:{$gte:todayStart,$lte:todayEnd}}),
+
+   Leave.countDocuments({status:"APPROVED",fromDate:{$gte:next7Days}})
+  ])
+
+ return({
+    statusCode: 200,
+    success: true,
+    data: {
+      totalLeaves,
+      pendingLeaves,
+      approvedToday,
+      onLeaveToday,
+      upcomingLeaves
+    },
+  });
+}
+
+//EMPLOYEES ON LEAVE TODAY
+
+exports.getEmployeesOnLeaveToday = async ({ user }) => {
+
+  if(user.role!=="ADMIN"){
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access this data",
+    };
+  }
+
+  const today = new Date();
+
+  const leaves = await Leave.find({status:"APPROVED",fromDate:{$lte:today},toDate:{$gte:today}})
+
+  .sort({fromDate:-1})
+
+   if (!leaves || leaves.length === 0) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: "No employees are on leave today",
+      data: Leave,
+    };
+  }
+
+  return {
+    statusCode: 200,
+    success: true,
+    data: Leave,
+  };
+}
+
+//UPCOMING LEAVES (NEXT 7 DAYS)
+
+exports.getUpcomingLeaves = async ({ user }) => {
+
+  if(user.role!=="ADMIN"){
+    return {
+      statusCode: 403,
+      success: false,
+      error: "Only Admin can access upcoming leaves",
+    }
+
+
+
+  }
+    const today = new Date();
+    const next7Days = new Date();
+    next7Days.setDate(today.getDate()+7);
+
+    const leaves = await Leave.find({status:"APPROVED",fromDate:{$gte:today,$lte:next7Days}})
+
+    .sort({fromDate:-1})
+       if (!leaves || leaves.length === 0) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: "No upcoming leave",
+      data: Leave,
+    };
+  }
+
+    return {
+      statusCode: 200,
+      success: true,
+      data: Leave,
+    };
+  
+  
+  
+  }
+
+
+  //PENDING LEAVES
+
+  exports.getPendingLeavesDashboard = async ({ user }) => {
+
+    if(user.role!=="ADMIN"){
+      return {
+        statusCode: 403,
+        success: false,
+        error: "Only Admin can access pending leaves",
+      }
+    }
+
+    const leaves = await Leave.find({status:"PENDING"})
+
+    .sort({createdAt:-1})
+
+
+
+    return {
+      statusCode: 200,
+      success: true,
+      data: leaves,
+    };
+  }

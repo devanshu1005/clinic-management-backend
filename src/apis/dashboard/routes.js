@@ -3,7 +3,7 @@ const router = express.Router();
 //const {  } = require("./validation");
 const { protect, authorize, validate } = require("../../middlewares");
 const{getSalaryDashboardListSchema,getSalaryDashboardSummarySchema}=require("./validation");
-const { getAdminDashboard,getDoctorDashboard,getReceptionistDashboard,getStaffDashboard,getSuperAdminDashboard,getSalaryDashboardList,getSalaryDashboardSummary} = require("./controller");
+const { getAdminDashboard,getDoctorDashboard,getReceptionistDashboard,getStaffDashboard,getSuperAdminDashboard,getSalaryDashboardList,getSalaryDashboardSummary,getEmployeesOnLeaveToday,getUpcomingLeaves,getLeaveDashboardSummary,getPendingLeavesDashboard} = require("./controller");
 const responseHandler = require("../../utils/responseHandler");
 
 router.get(
@@ -59,4 +59,33 @@ router.get(
     validate(getSalaryDashboardSummarySchema,"query"),
     responseHandler(getSalaryDashboardSummary)
 )
+
+router.get(
+    "/upcoming-leaves",
+    protect,
+    authorize( "ADMIN", "SUPER_ADMIN"),
+    responseHandler(getUpcomingLeaves )
+
+)
+
+router.get(
+    "/leavesummery",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    responseHandler(getLeaveDashboardSummary )
+
+)
+router.get(
+    "/pendingleaves",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    responseHandler(getPendingLeavesDashboard )
+
+)
+router.get(
+    "/today-leaves",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    responseHandler(getEmployeesOnLeaveToday ))
+
 module.exports=router;
